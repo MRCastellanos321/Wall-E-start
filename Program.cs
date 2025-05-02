@@ -2,22 +2,22 @@
 {
     public enum TokenType
     {
-        // Single-character tokens
+        
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
         COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, MULTIPLY,
-        // One or two character tokens
+        
         BANG, BANG_EQUAL,
         EQUAL, EQUAL_EQUAL,
         GREATER, GREATER_EQUAL,
         LESS, LESS_EQUAL,
-        // Literals
+       
         IDENTIFIER, STRING, NUMBER,
-        // Keywords
+       
         AND, CLASS, ELSE, FALSE, IF, OR,
         RETURN, TRUE, VAR, SPAWN_POINT, IS_BRUSH_COLOR, COLOR, GO_TO, IS_COLOR, IS_BRUSH_SIZE, IS_CANVAS_COLOR,
         GET_ACTUAL_X, GET_ACTUAL_Y, GET_CANVAS_SIZE, GET_COLOR_COUNT,
 
-        // Colors
+        
         BLUE, RED, GREEN, YELLOW, PURPLE, BLACK, WHITE, GREY, TRANSPARENT,
         EOF
     }
