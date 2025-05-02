@@ -1,0 +1,4 @@
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.GeneratedMSBuildEditorConfig.editorconfig
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.AssemblyInfoInputs.cache
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.AssemblyInfo.cs
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.csproj.CoreCompileInputs.cache

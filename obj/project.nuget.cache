@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "s0+8Q1Kb6WM=",
+  "success": true,
+  "projectFilePath": "/home/maya/Wall-E start/Wall-E start.csproj",
+  "expectedPackageFiles": [
+    "/home/maya/.nuget/packages/microsoft.netcore.app.host.linux-x64/8.0.15/microsoft.netcore.app.host.linux-x64.8.0.15.nupkg.sha512"
+  ],
+  "logs": []
+}
