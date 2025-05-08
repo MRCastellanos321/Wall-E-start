@@ -168,7 +168,7 @@ namespace Compiler
               }
 
        }
-
+//esto no es en realidad para While sino parael GoTo del label, despué hay que revisr mejor
        public class WhileStatement : Statement
        {
               public Expr Condition { get; }
