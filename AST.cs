@@ -106,6 +106,7 @@ namespace Compiler
        {
               T VisitCallFunction<T>(CallFunction statement);
               T VisitIfStatement<T>(IfStatement statement);
+              T VisitExprStatement<T>(ExpressionStmt statement);
               T VisitVarDeclaration<T>(VarDeclaration statement);
               T VisitWhileStatement<T>(WhileStatement statement);
        }
@@ -113,15 +114,14 @@ namespace Compiler
        public class CallFunction : Statement
        {
               //este va a ser el nodo de las funciones, q tiene q tener dentro una lista de nodos para los parámetros, y lo q hay dentro de la función ademas
-              public Token Name { get; }
-              public List<Token> Parameters { get; }
-              public List<Statement> Body { get; }
+              public TokenType Name { get; }
+              public List<Expr> Parameters { get; }
 
-              public CallFunction(Token name, List<Token> parameters, List<Statement> body)
+              public CallFunction(TokenType name, List<Expr> parameters)
               {
                      Name = name;
                      Parameters = parameters;
-                     Body = body;
+                     //las funciones del pdf son en realidad comandos y no tienen nada dentro
               }
 
               public override T Accept<T>(IStmtVisitor visitor)
@@ -134,6 +134,7 @@ namespace Compiler
        public class IfStatement : Statement
        {
               //este va a unir el if y el else. El branch else aquí puede ser nulo. Habra q especificar algo más?
+              //el pdf permite incluir if y else?
               public Expr Condition { get; }
               public Statement ThenBranch { get; }
               public Statement ElseBranch { get; }
@@ -168,7 +169,19 @@ namespace Compiler
               }
 
        }
-//esto no es en realidad para While sino parael GoTo del label, despué hay que revisr mejor
+       public class ExpressionStmt : Statement
+       {
+              public Expr Expression;
+              public ExpressionStmt(Expr expression)
+              {
+                     Expression = expression;
+              }
+              public override T Accept<T>(IStmtVisitor visitor)
+              {
+                     return visitor.VisitExprStatement<T>(this);
+              }
+       }
+       //esto no es en realidad para While sino parael GoTo del label, despué hay que revisr mejor
        public class WhileStatement : Statement
        {
               public Expr Condition { get; }

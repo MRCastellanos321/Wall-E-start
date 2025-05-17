@@ -12,8 +12,6 @@ namespace Compiler
         Lexer(String sourceCode)
         {
             this.sourceCode = sourceCode;
-            this.position = position;
-            this.line = line;
         }
         private bool IsAtEnd()
         {
