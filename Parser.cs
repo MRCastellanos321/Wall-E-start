@@ -1,3 +1,5 @@
+using System.Data.Common;
+
 namespace Compiler
 {
     public class Parser
@@ -11,13 +13,20 @@ namespace Compiler
             statementParsers = new Dictionary<string, Func<Statement>>()
          {
             { "SpawnPoint", ParseSpawnPoint},
-            {"IsCanvasColor", ParseIsCanvasColor},
+            { "Color", ParseColor},
+            { "Size", ParseSize},
+            { "IsBrushColor", ParseIsBrushColor},
+            { "DrawLine", ParseDrawLine},
+            { "DrawRectangle", ParseDrawRectangle},
+            { "DrawCirle", ParseDrawCircle},
+            { "IsCanvasColor", ParseIsCanvasColor},
             {"IsBrushSize", ParseIsBrushColor},
             { "ActualX", ParseActualX},
             { "ActualY", ParseActualY},
             {"GetCanvasSize", ParseGetCanvasSize},
             {"GetColorCount", ParseGetColorCount},
          };
+            //Probablemente tenga que dividir el diccionario entre comandos y funciones con retorno
         }
         public List<Statement> ParsePrograma()
         {
@@ -57,14 +66,24 @@ namespace Compiler
         private Token Consume(TokenType type, string errorMessage)
         {
             if (Peek().type == type)
-            return Advance();
+            {
+                return Advance();
+            }
             throw new Exception($"Error en {Peek().line}. Se esperaba {errorMessage}, pero se encontró '{Peek().lexeme}'");
+        }
+        private Token LookAhead(int offset)
+        {
+            if (position + offset < tokens.Count)
+            {
+                return tokens[position + offset];
+            }
+            return tokens[tokens.Count - 1];
         }
 
         private Statement ParseStatement()
         {
             //aquí hay que hacer algo para comprobar cuando se habla de funciones y cuando no
-            if (Peek().type == TokenType.)
+            if (Lexer.keyWords.TryGetValue(Peek().lexeme, out TokenType type))
             {
                 string lexeme = Peek().lexeme;
                 if (statementParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
@@ -72,20 +91,89 @@ namespace Compiler
                     return parseMethod();
                 }
             }
-            // sino es función, es un expression statement
-            //por aquí hay que comprobar por algún error?
-            return ParseExpressionStatement();
+            // sino es función, es una declaración de variable o está nombrando un loop?
+            if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.ARROW)
+            {
+                return ParseAssignmentStatement();
+            }
         }
-        public Statement ParseExpressionStatement()
+
+
+
+        public Statement ParseAssignmentStatement()
         {
-            Expr expr = ParseExpression();
-            Consume(TokenType.SEMICOLON, "un ;");
-            return new ExpressionStmt(expr);
+            Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
+            Consume(TokenType.ARROW, "una flecha '<-' en la asignación");
+            Expr value = ParseExpression(); // La expresión debe existir
+            return new VarDeclaration(ident.lexeme, value);
         }
+
         public Expr ParseExpression()
         {
-
+            Token token = Advance();
+            if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
+            {
+                return new LiteralExpr(token.lexeme);
+            }
+            if (token.type == TokenType.IDENTIFIER)
+            {
+                // Si viene un (, es una llamada a función.
+                if (LookAhead(1).type == TokenType.LEFT_PAREN)
+                {
+                    return ParseCallExpression();
+                }
+               // de lo contrario que es lo que tengo que tener? Donde más puede haber una expresión?
+            }
+            if (token.type == TokenType.LEFT_PAREN)
+            {
+                Expr expr = ParseExpression();
+                Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
+                return new GroupingExpr(expr);
+            }
+            throw new Exception($"Error en {token.line}: Expresión inesperada.");
         }
+        public Expr ParseCallExpression()
+        {
+            Token paren = Consume(TokenType.LEFT_PAREN, "un '(' en la llamada a función");
+            List<Expr> arguments = new List<Expr>();
+            if (Peek().type == TokenType.RIGHT_PAREN)
+            {
+                do
+                {
+                  arguments.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+            }
+            Token closingParen = Consume(TokenType.RIGHT_PAREN, "un ')' que cierre la llamada a función");
+            return new ;
+        }
+        public Statement ParseVarDeclaration()
+        {
+            Token ident = Consume(TokenType.IDENTIFIER, "un identificador para la variable");
+            Expr initializer = null;
+            if (Match(TokenType.ARROW))
+            {
+                if (statementParsers.TryGetValue(Peek().lexeme, out Func<Statement> parseMethod))
+                {
+                    //initializer = parseMethod(); tengo que hacer algo para cuando se iguala a una función
+                }
+                initializer = ParseExpression();
+            }
+            if (initializer != null)
+            {
+                return new VarDeclaration(ident.lexeme, initializer);
+            }
+            throw new Exception($"Error en {ident.line}: variable {ident.lexeme} no inicializada.");
+        }
+
+
+
+
+
+
+
+
+
+
         //lógica individual para cada una una vez encuentre un statement?
         public Statement ParseSpawnPoint()
         {
@@ -96,7 +184,7 @@ namespace Compiler
             {
                 do
                 {
-                 parameters.Add(ParseExpression());
+                    parameters.Add(ParseExpression());
                 } while (Match(TokenType.COMMA));
                 Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
                 if (parameters.Count != 2)
@@ -118,7 +206,7 @@ namespace Compiler
                 }
 
             }
-            return new CallFunction(TokenType.SPAWN_POINT, parameters);
+            return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Statement ParseBinaryExpression() { }
         public Statement ParseUnaryExpression() { }
@@ -130,6 +218,11 @@ namespace Compiler
         public Statement ParseGetCanvasSize() { }
         public Statement ParseGetColorCount() { }
         public Statement ParseIsColor() { }
+        public Statement ParseColor() { }
+        public Statement ParseSize() { }
+        public Statement ParseDrawLine() { }
+        public Statement ParseDrawCircle() { }
+        public Statement ParseDrawRectangle() { }
 
     }
 

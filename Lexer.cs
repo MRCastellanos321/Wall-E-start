@@ -47,17 +47,22 @@ namespace Compiler
             }
         }
 
-        private readonly Dictionary<string, TokenType> keyWords = new Dictionary<string, TokenType>()
+        public static readonly Dictionary<string, TokenType> keyWords = new Dictionary<string, TokenType>()
         {
-          {"SpawnPoint" ,TokenType.SPAWN_POINT},
-          {"IsBrushColor" ,TokenType.IS_BRUSH_COLOR},
+
           {"Spawn", TokenType.SPAWN_POINT},
           {"Color", TokenType.COLOR},
-          {"GoTo", TokenType.GO_TO},
+          {"Size", TokenType.SIZE},
+          {"DrawLine", TokenType.DRAW_LINE},
+          {"DrawCircle", TokenType.DRAW_CIRCLE},
+           {"DrawRECTANGLE", TokenType.DRAW_RECTANGLE},
+          { "Fill", TokenType.FILL},
+          { "GoTo", TokenType.GO_TO},
           {"IsColor", TokenType.IS_COLOR},
           {"IsBrushSize", TokenType.IS_BRUSH_SIZE},
           {"IsCanvasColor", TokenType.IS_CANVAS_COLOR},
-          {"GetActualX", TokenType.GET_ACTUAL_X},
+          {"IsBrushColor" ,TokenType.IS_BRUSH_COLOR},
+          { "GetActualX", TokenType.GET_ACTUAL_X},
           {"GetActualY", TokenType.GET_ACTUAL_Y},
           {"GetCanvasSize", TokenType.GET_CANVAS_SIZE},
           {"GetColorCount", TokenType.GET_COLOR_COUNT},
@@ -94,12 +99,19 @@ namespace Compiler
                     case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); break;
                     case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); break;
                     case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); break;
-                    case '<': if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; } 
-                    else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); } break;
-                    case '>': if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break;} 
-                    else { tokens.Add(new Token(TokenType.GREATER, ">", ">", line)); } break;
-                    case '=': if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); break; } 
-                    else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); } break;
+                    case '<':
+                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
+                        else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
+                        break;
+                    case '>':
+                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.GREATER, ">", ">", line)); }
+                        break;
+                    case '=':
+                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); }
+                        break;
 
                     default:
                         if (IsDigit(currentChar)) { CheckNumber(); }
@@ -132,7 +144,7 @@ namespace Compiler
         }
         private void CheckAlpha()
         {
-            while (IsAlpha(Peek()))
+            while (IsAlpha(Peek()) || IsDigit(Peek()) || Peek() == '_')
             { Advance(); }
             string textString = sourceCode.Substring(start, position - start);
             TokenType type;

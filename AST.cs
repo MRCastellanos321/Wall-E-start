@@ -105,8 +105,9 @@ namespace Compiler
        public interface IStmtVisitor
        {
               T VisitCallFunction<T>(CallFunction statement);
-              T VisitIfStatement<T>(IfStatement statement);
-              T VisitExprStatement<T>(ExpressionStmt statement);
+               T VisitCallComand<T>(CallComand statement);
+              // T VisitIfStatement<T>(IfStatement statement);
+              // T VisitExprStatement<T>(ExpressionStmt statement);
               T VisitVarDeclaration<T>(VarDeclaration statement);
               T VisitWhileStatement<T>(WhileStatement statement);
        }
@@ -116,6 +117,8 @@ namespace Compiler
               //este va a ser el nodo de las funciones, q tiene q tener dentro una lista de nodos para los parámetros, y lo q hay dentro de la función ademas
               public TokenType Name { get; }
               public List<Expr> Parameters { get; }
+
+            //debeía poner algo de lógica del tipo de retorno aquí?
 
               public CallFunction(TokenType name, List<Expr> parameters)
               {
@@ -131,33 +134,53 @@ namespace Compiler
 
        }
 
-       public class IfStatement : Statement
+       public class CallComand : Statement
        {
-              //este va a unir el if y el else. El branch else aquí puede ser nulo. Habra q especificar algo más?
-              //el pdf permite incluir if y else?
-              public Expr Condition { get; }
-              public Statement ThenBranch { get; }
-              public Statement ElseBranch { get; }
-              public IfStatement(Expr condition, Statement thenBranch, Statement elseBranch)
+
+              public TokenType Name { get; }
+              public List<Expr> Parameters { get; }
+
+              public CallComand(TokenType name, List<Expr> parameters)
               {
-                     Condition = condition;
-                     ThenBranch = thenBranch;
-                     ElseBranch = elseBranch;
+                     Name = name;
+                     Parameters = parameters;
+                     //las funciones del pdf son en realidad comandos y no tienen nada dentro
               }
 
               public override T Accept<T>(IStmtVisitor visitor)
               {
-                     return visitor.VisitIfStatement<T>(this);
+                     return visitor.VisitCallComand<T>(this);
               }
-       }
-       //queda ver lo del if, asignacion de variables, etc, en statements
 
+       }
+
+       /*   public class IfStatement : Statement
+                {
+                       //este va a unir el if y el else. El branch else aquí puede ser nulo. Habra q especificar algo más?
+                       //el pdf permite incluir if y else?
+                       public Expr Condition { get; }
+                       public Statement ThenBranch { get; }
+                       public Statement ElseBranch { get; }
+                       public IfStatement(Expr condition, Statement thenBranch, Statement elseBranch)
+                       {
+                              Condition = condition;
+                              ThenBranch = thenBranch;
+                              ElseBranch = elseBranch;
+                       }
+
+                       public override T Accept<T>(IStmtVisitor visitor)
+                       {
+                              return visitor.VisitIfStatement<T>(this);
+                       }
+                }
+                //queda ver lo del if, asignacion de variables, etc, en statements
+         */
        public class VarDeclaration : Statement
        {
-              public Token Name { get; }
+              public string Name { get; }
               public Expr Initializer { get; }  // el pdf permit null?
 
-              public VarDeclaration(Token name, Expr initializer)
+              public VarDeclaration(string name, Expr initializer)
               {
                      Name = name;
                      Initializer = initializer;
@@ -169,6 +192,7 @@ namespace Compiler
               }
 
        }
+       /*
        public class ExpressionStmt : Statement
        {
               public Expr Expression;
@@ -180,7 +204,7 @@ namespace Compiler
               {
                      return visitor.VisitExprStatement<T>(this);
               }
-       }
+       }*/
        //esto no es en realidad para While sino parael GoTo del label, despué hay que revisr mejor
        public class WhileStatement : Statement
        {
