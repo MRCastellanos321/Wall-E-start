@@ -9,10 +9,15 @@ namespace Compiler
               T VisitLiteralExpr<T>(LiteralExpr expr);
               T VisitGroupingExpr<T>(GroupingExpr expr);
               T VisitUnaryExpr<T>(UnaryExpr expr);
+              T VisitCallFunction<T>(CallFunction expr);
        }
 
        // 
-       public abstract class Expr
+       public abstract class ASTNode
+       {
+              
+       }
+       public abstract class Expr : ASTNode
        {
               // Esto es para q todo el mudno tenga el accept
               public abstract T Accept<T>(IExprVisitor visitor);
@@ -97,14 +102,14 @@ namespace Compiler
        #endregion
 
 
-       public abstract class Statement
+       public abstract class Statement: ASTNode
        {
               public abstract T Accept<T>(IStmtVisitor visitor);
        }
 
        public interface IStmtVisitor
        {
-              T VisitCallFunction<T>(CallFunction statement);
+             // T VisitCallFunction<T>(CallFunction statement);
                T VisitCallComand<T>(CallComand statement);
               // T VisitIfStatement<T>(IfStatement statement);
               // T VisitExprStatement<T>(ExpressionStmt statement);
@@ -112,7 +117,7 @@ namespace Compiler
               T VisitWhileStatement<T>(WhileStatement statement);
        }
 
-       public class CallFunction : Statement
+       public class CallFunction : Expr
        {
               //este va a ser el nodo de las funciones, q tiene q tener dentro una lista de nodos para los parámetros, y lo q hay dentro de la función ademas
               public TokenType Name { get; }
@@ -127,7 +132,7 @@ namespace Compiler
                      //las funciones del pdf son en realidad comandos y no tienen nada dentro
               }
 
-              public override T Accept<T>(IStmtVisitor visitor)
+              public override T Accept<T>(IExprVisitor visitor)
               {
                      return visitor.VisitCallFunction<T>(this);
               }

@@ -6,29 +6,34 @@ namespace Compiler
     {
         public List<Token> tokens;
         private int position = 0; //es separada de la de las otras clases
-        private readonly Dictionary<string, Func<Statement>> statementParsers;
+        private readonly Dictionary<string, Func<Statement>> commandParsers;
+        private readonly Dictionary<string, Func<Expr>> exprFunctionParsers;
         private readonly Dictionary<string, string> colors;
         //  BLUE, RED, GREEN, YELLOW, PURPLE, BLACK, WHITE, GREY, TRANSPARENT,
         public Parser(List<Token> Tokens)
         {
             tokens = Tokens;
-            statementParsers = new Dictionary<string, Func<Statement>>()
+            commandParsers = new Dictionary<string, Func<Statement>>()
          {
             { "SpawnPoint", ParseSpawnPoint},
             { "Color", ParseColor},
             { "Size", ParseSize},
-            { "IsBrushColor", ParseIsBrushColor},
             { "DrawLine", ParseDrawLine},
             { "DrawRectangle", ParseDrawRectangle},
             { "DrawCirle", ParseDrawCircle},
+         };
+          exprFunctionParsers = new Dictionary<string, Func<Expr>>()
+         {
+            { "IsBrushColor", ParseIsBrushColor},
             { "IsCanvasColor", ParseIsCanvasColor},
             {"IsBrushSize", ParseIsBrushColor},
             { "ActualX", ParseActualX},
             { "ActualY", ParseActualY},
+            {"GetCanvasSize", ParseGetCanvasSize },
             {"GetCanvasSize", ParseGetCanvasSize},
             {"GetColorCount", ParseGetColorCount},
+            {"GetColorCount", ParseGetColorCount},
          };
-            //Probablemente tenga que dividir el diccionario entre comandos y funciones con retorno
         }
         public List<Statement> ParsePrograma()
         {
@@ -88,7 +93,7 @@ namespace Compiler
             if (Lexer.keyWords.TryGetValue(Peek().lexeme, out TokenType type))
             {
                 string lexeme = Peek().lexeme;
-                if (statementParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
+                if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
                 {
                     return parseMethod();
                 }
@@ -115,15 +120,13 @@ namespace Compiler
             {
                 return new LiteralExpr(token.lexeme);
             }
-            //esto de identifier está mal porque tiene que ser una de las funciones de mi diccionario
-            if (token.type == TokenType.IDENTIFIER)
+            if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> parseMethod))
             {
-                // Si viene un (, es una llamada a función.
                 if (LookAhead(1).type == TokenType.LEFT_PAREN)
                 {
-                    return ParseCallExpression();
+                    return parseMethod();
                 }
-                // de lo contrario que es lo que tengo que tener? Donde más puede haber una expresión?
+                throw new Exception($"Error en {token.line}: la llamada a función {token.lexeme} debe seguirse de paréntesis");
             }
             if (token.type == TokenType.LEFT_PAREN)
             {
@@ -131,22 +134,7 @@ namespace Compiler
                 Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
                 return new GroupingExpr(expr);
             }
-            throw new Exception($"Error en {token.line}: Expresión inesperada.");
-        }
-        //esto de parse call exression es para ver por fin lo de la variable asignadole función, pero no está considerando el diccionario
-        public Expr ParseCallExpression()
-        {
-            Token paren = Consume(TokenType.LEFT_PAREN, "un '(' en la llamada a función");
-            List<Expr> arguments = new List<Expr>();
-            if (Peek().type == TokenType.RIGHT_PAREN)
-            {
-                do
-                {
-                    arguments.Add(ParseExpression());
-                } while (Match(TokenType.COMMA));
-            }
-            Token closingParen = Consume(TokenType.RIGHT_PAREN, "un ')' que cierre la llamada a función");
-            return new ;
+            throw new Exception($"Error en {token.line}: Expresión no válida.");
         }
         public Statement ParseVarDeclaration()
         {
@@ -155,7 +143,7 @@ namespace Compiler
             if (Match(TokenType.ARROW))
             {
                 //esto de compobar la función va en realidad dentro de Parse expresion
-                if (statementParsers.TryGetValue(Peek().lexeme, out Func<Statement> parseMethod))
+                if (commandParsers.TryGetValue(Peek().lexeme, out Func<Statement> parseMethod))
                 {
                     //initializer = parseMethod(); tengo que hacer algo para cuando se iguala a una función
                 }
@@ -216,7 +204,7 @@ namespace Compiler
         }
         public Statement ParseUnaryExpression() { }
         public Statement ParseGroupingExpression() { }
-        public Statement ParseIsBrushColor()
+        public Expr ParseIsBrushColor()
         {
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
@@ -244,12 +232,12 @@ namespace Compiler
                 }
             }
         }
-        public Statement ParseActualX() { }
-        public Statement ParseActualY() { }
-        public Statement ParseIsCanvasColor() { }
-        public Statement ParseGetCanvasSize() { }
-        public Statement ParseGetColorCount() { }
-        public Statement ParseIsColor() { }
+        public Expr ParseActualX() { }
+        public Expr ParseActualY() { }
+        public Expr ParseIsCanvasColor() { }
+        public Expr ParseGetCanvasSize() { }
+        public Expr ParseGetColorCount() { }
+        public Expr ParseIsColor() { }
         public Statement ParseColor() { }
         public Statement ParseSize() { }
         public Statement ParseDrawLine() { }
