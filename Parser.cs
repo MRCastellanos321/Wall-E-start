@@ -7,6 +7,8 @@ namespace Compiler
         public List<Token> tokens;
         private int position = 0; //es separada de la de las otras clases
         private readonly Dictionary<string, Func<Statement>> statementParsers;
+        private readonly Dictionary<string, string> colors;
+        //  BLUE, RED, GREEN, YELLOW, PURPLE, BLACK, WHITE, GREY, TRANSPARENT,
         public Parser(List<Token> Tokens)
         {
             tokens = Tokens;
@@ -98,8 +100,6 @@ namespace Compiler
             }
         }
 
-
-
         public Statement ParseAssignmentStatement()
         {
             Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
@@ -115,6 +115,7 @@ namespace Compiler
             {
                 return new LiteralExpr(token.lexeme);
             }
+            //esto de identifier está mal porque tiene que ser una de las funciones de mi diccionario
             if (token.type == TokenType.IDENTIFIER)
             {
                 // Si viene un (, es una llamada a función.
@@ -122,7 +123,7 @@ namespace Compiler
                 {
                     return ParseCallExpression();
                 }
-               // de lo contrario que es lo que tengo que tener? Donde más puede haber una expresión?
+                // de lo contrario que es lo que tengo que tener? Donde más puede haber una expresión?
             }
             if (token.type == TokenType.LEFT_PAREN)
             {
@@ -132,6 +133,7 @@ namespace Compiler
             }
             throw new Exception($"Error en {token.line}: Expresión inesperada.");
         }
+        //esto de parse call exression es para ver por fin lo de la variable asignadole función, pero no está considerando el diccionario
         public Expr ParseCallExpression()
         {
             Token paren = Consume(TokenType.LEFT_PAREN, "un '(' en la llamada a función");
@@ -140,7 +142,7 @@ namespace Compiler
             {
                 do
                 {
-                  arguments.Add(ParseExpression());
+                    arguments.Add(ParseExpression());
                 } while (Match(TokenType.COMMA));
             }
             Token closingParen = Consume(TokenType.RIGHT_PAREN, "un ')' que cierre la llamada a función");
@@ -152,6 +154,7 @@ namespace Compiler
             Expr initializer = null;
             if (Match(TokenType.ARROW))
             {
+                //esto de compobar la función va en realidad dentro de Parse expresion
                 if (statementParsers.TryGetValue(Peek().lexeme, out Func<Statement> parseMethod))
                 {
                     //initializer = parseMethod(); tengo que hacer algo para cuando se iguala a una función
@@ -208,10 +211,39 @@ namespace Compiler
             }
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
-        public Statement ParseBinaryExpression() { }
+        public Statement ParseBinaryExpression()
+        {
+        }
         public Statement ParseUnaryExpression() { }
         public Statement ParseGroupingExpression() { }
-        public Statement ParseIsBrushColor() { }
+        public Statement ParseIsBrushColor()
+        {
+            Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+            if (!Match(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+                if (parameters.Count != 1)
+                {
+                    throw new Exception($"Error de sintaxis en {funcToken.line}: IsColorBrush requiere 1 argumento (Color). Se recibieron {parameters.Count}.");
+                }
+
+                if (!(parameters[0] is LiteralExpr literal))
+                {
+                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un literal.");
+                }
+
+                if (!(parameters[1] is ))
+                {
+                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
+                }
+            }
+        }
         public Statement ParseActualX() { }
         public Statement ParseActualY() { }
         public Statement ParseIsCanvasColor() { }

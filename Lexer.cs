@@ -55,7 +55,7 @@ namespace Compiler
           {"Size", TokenType.SIZE},
           {"DrawLine", TokenType.DRAW_LINE},
           {"DrawCircle", TokenType.DRAW_CIRCLE},
-           {"DrawRECTANGLE", TokenType.DRAW_RECTANGLE},
+          {"DrawRECTANGLE", TokenType.DRAW_RECTANGLE},
           { "Fill", TokenType.FILL},
           { "GoTo", TokenType.GO_TO},
           {"IsColor", TokenType.IS_COLOR},
