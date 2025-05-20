@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Drawing;
 
 namespace Compiler
 {
@@ -9,7 +10,7 @@ namespace Compiler
         private readonly Dictionary<string, Func<Statement>> commandParsers;
         private readonly Dictionary<string, Func<Expr>> exprFunctionParsers;
         private readonly Dictionary<string, string> colors;
-        //  BLUE, RED, GREEN, YELLOW, PURPLE, BLACK, WHITE, GREY, TRANSPARENT,
+        //  
         public Parser(List<Token> Tokens)
         {
             tokens = Tokens;
@@ -20,24 +21,35 @@ namespace Compiler
             { "Size", ParseSize},
             { "DrawLine", ParseDrawLine},
             { "DrawRectangle", ParseDrawRectangle},
-            { "DrawCirle", ParseDrawCircle},
+            { "DrawCircle", ParseDrawCircle},
          };
-          exprFunctionParsers = new Dictionary<string, Func<Expr>>()
+            exprFunctionParsers = new Dictionary<string, Func<Expr>>()
          {
             { "IsBrushColor", ParseIsBrushColor},
             { "IsCanvasColor", ParseIsCanvasColor},
             {"IsBrushSize", ParseIsBrushColor},
             { "ActualX", ParseActualX},
             { "ActualY", ParseActualY},
-            {"GetCanvasSize", ParseGetCanvasSize },
             {"GetCanvasSize", ParseGetCanvasSize},
             {"GetColorCount", ParseGetColorCount},
-            {"GetColorCount", ParseGetColorCount},
+         };
+
+            colors = new Dictionary<string, string>()
+         {
+            {"Blue","Blue"},
+            { "Red", "Red"},
+            { "Green", "Green"},
+            { "Yellow", "Yellow" },
+            {"Purple","Purple"},
+            {"Black","Black"},
+            { "White","White"},
+            {"Grey", "Grey"},
+            { "Transparent", "Transparent" },
          };
         }
-        public List<Statement> ParsePrograma()
+        public List<ASTNode> ParsePrograma()
         {
-            var statements = new List<Statement>();
+            var statements = new List<ASTNode>();
             while (Peek().type != TokenType.EOF)
             {
                 statements.Add(ParseStatement());
@@ -87,9 +99,8 @@ namespace Compiler
             return tokens[tokens.Count - 1];
         }
 
-        private Statement ParseStatement()
+        private ASTNode ParseStatement()
         {
-            //aquí hay que hacer algo para comprobar cuando se habla de funciones y cuando no
             if (Lexer.keyWords.TryGetValue(Peek().lexeme, out TokenType type))
             {
                 string lexeme = Peek().lexeme;
@@ -97,36 +108,38 @@ namespace Compiler
                 {
                     return parseMethod();
                 }
+                else if (exprFunctionParsers.TryGetValue(lexeme, out Func<Expr> exprParseMethod))
+                {
+                    return exprParseMethod();
+                }
             }
-            // sino es función, es una declaración de variable o está nombrando un loop?
-            if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.ARROW)
+            else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.ARROW)
             {
                 return ParseAssignmentStatement();
             }
+            //aquí falta la lógica del loop
+            throw new Exception($"Statement no identificado en la línea {Peek().line}");
         }
 
         public Statement ParseAssignmentStatement()
         {
             Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
             Consume(TokenType.ARROW, "una flecha '<-' en la asignación");
-            Expr value = ParseExpression(); // La expresión debe existir
+            Expr value = ParseExpression();
+            //if (value is CallFunction || value is BinaryExpr || value is BinaryExpr || value is UnaryExpr || value is GroupingExpr  )
             return new VarDeclaration(ident.lexeme, value);
         }
 
         public Expr ParseExpression()
         {
-            Token token = Advance();
+            Token token = Peek();
             if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
             {
                 return new LiteralExpr(token.lexeme);
             }
-            if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> parseMethod))
+            if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> exprParseMethod))
             {
-                if (LookAhead(1).type == TokenType.LEFT_PAREN)
-                {
-                    return parseMethod();
-                }
-                throw new Exception($"Error en {token.line}: la llamada a función {token.lexeme} debe seguirse de paréntesis");
+                return exprParseMethod();
             }
             if (token.type == TokenType.LEFT_PAREN)
             {
@@ -134,27 +147,9 @@ namespace Compiler
                 Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
                 return new GroupingExpr(expr);
             }
-            throw new Exception($"Error en {token.line}: Expresión no válida.");
+            throw new Exception($"Error en {token.line}: Expresión asignada no válida.");
         }
-        public Statement ParseVarDeclaration()
-        {
-            Token ident = Consume(TokenType.IDENTIFIER, "un identificador para la variable");
-            Expr initializer = null;
-            if (Match(TokenType.ARROW))
-            {
-                //esto de compobar la función va en realidad dentro de Parse expresion
-                if (commandParsers.TryGetValue(Peek().lexeme, out Func<Statement> parseMethod))
-                {
-                    //initializer = parseMethod(); tengo que hacer algo para cuando se iguala a una función
-                }
-                initializer = ParseExpression();
-            }
-            if (initializer != null)
-            {
-                return new VarDeclaration(ident.lexeme, initializer);
-            }
-            throw new Exception($"Error en {ident.line}: variable {ident.lexeme} no inicializada.");
-        }
+
 
 
 
@@ -214,6 +209,7 @@ namespace Compiler
                 do
                 {
                     parameters.Add(ParseExpression());
+                    
                 } while (Match(TokenType.COMMA));
                 Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
                 if (parameters.Count != 1)
@@ -225,8 +221,8 @@ namespace Compiler
                 {
                     throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un literal.");
                 }
-
-                if (!(parameters[1] is ))
+                string parameterColor;
+                if (!colors.TryGetValue(((LiteralExpr)parameters[0]).Value.ToString(), out parameterColor))
                 {
                     throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
                 }
