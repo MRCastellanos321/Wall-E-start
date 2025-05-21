@@ -101,18 +101,17 @@ namespace Compiler
 
         private ASTNode ParseStatement()
         {
-            if (Lexer.keyWords.TryGetValue(Peek().lexeme, out TokenType type))
+
+            string lexeme = Peek().lexeme;
+            if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
             {
-                string lexeme = Peek().lexeme;
-                if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
-                {
-                    return parseMethod();
-                }
-                else if (exprFunctionParsers.TryGetValue(lexeme, out Func<Expr> exprParseMethod))
-                {
-                    return exprParseMethod();
-                }
+                return parseMethod();
             }
+            else if (exprFunctionParsers.TryGetValue(lexeme, out Func<Expr> exprParseMethod))
+            {
+                return exprParseMethod();
+            }
+
             else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.ARROW)
             {
                 return ParseAssignmentStatement();
@@ -157,40 +156,33 @@ namespace Compiler
 
 
 
-
-
-
         //lógica individual para cada una una vez encuentre un statement?
         public Statement ParseSpawnPoint()
         {
             Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             List<Expr> parameters = new List<Expr>();
-            if (!Match(TokenType.RIGHT_PAREN))
+            do
             {
-                do
+                parameters.Add(ParseExpression());
+            } while (Match(TokenType.COMMA));
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            if (parameters.Count != 2)
+            {
+                throw new Exception($"Error de sintaxis en {funcToken.line}: Spawn requiere dos argumentos (int, int). Se recibieron {parameters.Count}.");
+            }
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                if (!(parameters[i] is LiteralExpr literal))
                 {
-                    parameters.Add(ParseExpression());
-                } while (Match(TokenType.COMMA));
-                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-                if (parameters.Count != 2)
-                {
-                    throw new Exception($"Error de sintaxis en {funcToken.line}: Spawn requiere dos argumentos (int, int). Se recibieron {parameters.Count}.");
+                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un literal.");
                 }
-                for (int i = 0; i < parameters.Count; i++)
+                object value = literal.Value;
+
+                if (!(value is int))
                 {
-                    if (!(parameters[i] is LiteralExpr literal))
-                    {
-                        throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un literal.");
-                    }
-                    object value = literal.Value;
-
-                    if (!(value is int))
-                    {
-                        throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un entero.");
-                    }
+                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un entero.");
                 }
-
             }
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
@@ -204,41 +196,187 @@ namespace Compiler
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             List<Expr> parameters = new List<Expr>();
+            do
+            {
+                parameters.Add(ParseExpression());
+
+            } while (Match(TokenType.COMMA));
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            if (parameters.Count != 1)
+            {
+                throw new Exception($"Error de sintaxis en {funcToken.line}: IsColorBrush requiere 1 argumento (Color). Se recibieron {parameters.Count}.");
+            }
+
+            if (!(parameters[0] is LiteralExpr literal))
+            {
+                throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un literal.");
+            }
+            string parameterColor;
+            if (!colors.TryGetValue(((LiteralExpr)parameters[0]).Value.ToString(), out parameterColor))
+            {
+                throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
+            }
+            return new CallFunction(TokenType.IS_BRUSH_COLOR, parameters);
+        }
+        public Expr ParseActualX()
+        {
+            Consume(TokenType.GET_ACTUAL_X, "ActualX");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            return new CallFunction(TokenType.GET_ACTUAL_X, new List<Expr>());
+        }
+
+        public Expr ParseActualY()
+        {
+            Consume(TokenType.GET_ACTUAL_Y, "ActualY");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            return new CallFunction(TokenType.GET_ACTUAL_Y, new List<Expr>());
+        }
+
+        public Expr ParseGetCanvasSize() { }
+        public Expr ParseGetColorCount() { }
+        public Expr ParseIsColor() { }
+
+//las funciones todavía no tienen comprobacion de int
+        public Expr ParseIsCanvasColor()
+        {
+            Token funcToken = Consume(TokenType.IS_CANVAS_COLOR, "IsCanvasColor");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+
             if (!Match(TokenType.RIGHT_PAREN))
             {
                 do
                 {
                     parameters.Add(ParseExpression());
-                    
                 } while (Match(TokenType.COMMA));
+
                 Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-                if (parameters.Count != 1)
+
+                if (parameters.Count != 3)
                 {
-                    throw new Exception($"Error de sintaxis en {funcToken.line}: IsColorBrush requiere 1 argumento (Color). Se recibieron {parameters.Count}.");
+                    throw new Exception($"Error en {funcToken.line}: IsCanvasColor requiere 3 parámetros (color, vertical, horizontal).");
                 }
 
-                if (!(parameters[0] is LiteralExpr literal))
+                if (!(parameters[0] is LiteralExpr) || !colors.ContainsKey(((LiteralExpr)parameters[0]).Value.ToString()))
                 {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un literal.");
-                }
-                string parameterColor;
-                if (!colors.TryGetValue(((LiteralExpr)parameters[0]).Value.ToString(), out parameterColor))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
+                    throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido.");
                 }
             }
+
+            return new CallFunction(TokenType.IS_CANVAS_COLOR, parameters);
         }
-        public Expr ParseActualX() { }
-        public Expr ParseActualY() { }
-        public Expr ParseIsCanvasColor() { }
-        public Expr ParseGetCanvasSize() { }
-        public Expr ParseGetColorCount() { }
-        public Expr ParseIsColor() { }
-        public Statement ParseColor() { }
-        public Statement ParseSize() { }
-        public Statement ParseDrawLine() { }
-        public Statement ParseDrawCircle() { }
-        public Statement ParseDrawRectangle() { }
+        public Statement ParseColor()
+        {
+            Token funcToken = Consume(TokenType.COLOR, "Color");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            Expr colorExpr = ParseExpression();
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+            if (!(colorExpr is LiteralExpr literal) || !colors.ContainsKey(literal.Value.ToString()))
+            {
+                throw new Exception($"Error en {funcToken.line}: Color debe recibir un literal válido.");
+            }
+
+            return new CallComand(TokenType.COLOR, new List<Expr> { colorExpr });
+        }
+        public Statement ParseSize()
+        {
+            Token funcToken = Consume(TokenType.SIZE, "Size");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            Expr sizeExpr = ParseExpression();
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+            if (!(sizeExpr is LiteralExpr))
+            {
+                throw new Exception($"Error en {funcToken.line}: Size debe ser un entero.");
+            }
+
+            return new CallComand(TokenType.SIZE, new List<Expr> { sizeExpr });
+        }
+
+        public Statement ParseDrawLine()
+        {
+
+            Token funcToken = Consume(TokenType.DRAW_LINE, "DrawLine");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+            if (!Match(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+
+                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+                if (parameters.Count != 3)
+                {
+                    throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
+                }
+            }
+            else
+            {
+                throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
+            }
+
+            return new CallComand(TokenType.DRAW_LINE, parameters);
+        }
+
+        public Statement ParseDrawCircle()
+        {
+            Token funcToken = Consume(TokenType.DRAW_CIRCLE, "DrawCircle");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+
+            if (!Match(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+
+                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+                if (parameters.Count != 3)
+                {
+                    throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros (dirX, dirY, radius).");
+                }
+            }
+            else
+            {
+                throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros.");
+            }
+
+            return new CallComand(TokenType.DRAW_CIRCLE, parameters);
+        }
+        public Statement ParseDrawRectangle()
+        {
+            Token funcToken = Consume(TokenType.DRAW_RECTANGLE, "DrawRectangle");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+
+            if (!Match(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+
+                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+                if (parameters.Count != 5)
+                {
+                    throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
+                }
+            }
+            else
+            {
+                throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
+            }
+            return new CallComand(TokenType.DRAW_RECTANGLE, parameters);
+        }
 
     }
 
