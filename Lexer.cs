@@ -99,6 +99,7 @@ namespace Compiler
                     case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); break;
                     case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); break;
                     case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); break;
+                    case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); break;
                     case '<':
                         if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
                         else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
@@ -115,11 +116,8 @@ namespace Compiler
 
                     default:
                         if (IsDigit(currentChar)) { CheckNumber(); }
-                        else if (IsAlpha(currentChar)) { CheckAlpha(); } //falta ver q hacer con respecto a etiquetas
-                        else
-                        {
-                            tokens.Add(new Token(TokenType.IDENTIFIER, sourceCode.Substring(start, position - start), sourceCode.Substring(start, position - start), line));
-                        }
+                        else if (IsAlpha(currentChar) || currentChar == '_') { CheckAlpha(); }
+                        else { throw new Exception($"Caracter {currentChar} no reconocido en la línea {line}"); }
                         break;
                 }
             }
@@ -144,15 +142,33 @@ namespace Compiler
         }
         private void CheckAlpha()
         {
-            while (IsAlpha(Peek()) || IsDigit(Peek()) || Peek() == '_')
+            while (IsAlpha(Peek()) || IsDigit(Peek()) || Peek() == '_' || Peek() == '-')
             { Advance(); }
             string textString = sourceCode.Substring(start, position - start);
             TokenType type;
             if (!keyWords.TryGetValue(textString, out type))
             {
                 type = TokenType.IDENTIFIER;
+
             }
             tokens.Add(new Token(type, textString, textString, line));
+            ScanIdentifier(tokens[tokens.Count - 1]);
+        }
+        private void ScanIdentifier(Token token)
+        {
+            string text = token.lexeme;
+            bool hasUnderscore = text.Contains('_');
+            bool hasMinus = text.Contains('-');
+
+            if (hasUnderscore && hasMinus)
+            {
+                throw new Exception($"Identificador '{text}' no puede contener _ y - simultáneamente (línea {token.line})");
+            }
+            char firstChar = text[0];
+            if (char.IsDigit(firstChar) || firstChar == '-')
+            {
+                throw new Exception($"Identificador '{text}' no puede comenzar con número o guión (línea {token.line})");
+            }
         }
     }
 }

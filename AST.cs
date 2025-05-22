@@ -15,7 +15,7 @@ namespace Compiler
        // 
        public abstract class ASTNode
        {
-              
+
        }
        public abstract class Expr : ASTNode
        {
@@ -102,19 +102,19 @@ namespace Compiler
        #endregion
 
 
-       public abstract class Statement: ASTNode
+       public abstract class Statement : ASTNode
        {
               public abstract T Accept<T>(IStmtVisitor visitor);
        }
 
        public interface IStmtVisitor
        {
-             // T VisitCallFunction<T>(CallFunction statement);
-               T VisitCallComand<T>(CallComand statement);
+              // T VisitCallFunction<T>(CallFunction statement);
+              T VisitCallComand<T>(CallComand statement);
               // T VisitIfStatement<T>(IfStatement statement);
               // T VisitExprStatement<T>(ExpressionStmt statement);
               T VisitVarDeclaration<T>(VarDeclaration statement);
-              T VisitWhileStatement<T>(WhileStatement statement);
+              T VisitGoToStatement<T>(GoToStatement statement);
        }
 
        public class CallFunction : Expr
@@ -123,7 +123,7 @@ namespace Compiler
               public TokenType Name { get; }
               public List<Expr> Parameters { get; }
 
-            //debeía poner algo de lógica del tipo de retorno aquí?
+              //debeía poner algo de lógica del tipo de retorno aquí?
 
               public CallFunction(TokenType name, List<Expr> parameters)
               {
@@ -211,19 +211,20 @@ namespace Compiler
               }
        }*/
        //esto no es en realidad para While sino parael GoTo del label, despué hay que revisr mejor
-       public class WhileStatement : Statement
+       public class GoToStatement : Statement
        {
+              public string Location { get; }
+
               public Expr Condition { get; }
-              public Statement Body { get; }
-              public WhileStatement(Expr condition, Statement body)
+              public GoToStatement(string location, Expr condition)
               {
+                     Location = location;
                      Condition = condition;
-                     Body = body;
               }
 
               public override T Accept<T>(IStmtVisitor visitor)
               {
-                     return visitor.VisitWhileStatement<T>(this);
+                     return visitor.VisitGoToStatement<T>(this);
               }
        }
 

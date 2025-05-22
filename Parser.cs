@@ -101,7 +101,7 @@ namespace Compiler
 
         private ASTNode ParseStatement()
         {
-
+            //aquí debe haber algo respecto a el salto de línea
             string lexeme = Peek().lexeme;
             if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
             {
@@ -116,12 +116,21 @@ namespace Compiler
             {
                 return ParseAssignmentStatement();
             }
+            else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.NEW_LINE)
+            {
+                // return New(); algo para etiquetas
+            }
+            else if (Peek().type == TokenType.GO_TO)
+            {
+                ParseLabelStatement();
+            }
             //aquí falta la lógica del loop
             throw new Exception($"Statement no identificado en la línea {Peek().line}");
         }
 
         public Statement ParseAssignmentStatement()
         {
+            ValidateVarIdentifier();
             Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
             Consume(TokenType.ARROW, "una flecha '<-' en la asignación");
             Expr value = ParseExpression();
@@ -132,6 +141,7 @@ namespace Compiler
         public Expr ParseExpression()
         {
             Token token = Peek();
+            //aquí hay que ver algo para bool
             if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
             {
                 return new LiteralExpr(token.lexeme);
@@ -146,10 +156,52 @@ namespace Compiler
                 Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
                 return new GroupingExpr(expr);
             }
+            //esto funciona para cuando una función pide parse expresion para sus párametros
+            if (token.type == TokenType.IDENTIFIER && token.lexeme.Contains('-'))
+            {
+                throw new Exception($"Error en {token.line}: no se aceptan etiquetas como expresiones aritméticas");
+            }
             throw new Exception($"Error en {token.line}: Expresión asignada no válida.");
         }
 
+        private Statement ParseLabelStatement()
+        {
+            Consume(TokenType.GO_TO, "GoTo");
+            Consume(TokenType.LEFT_BRACKET, "corchete izquierdo '['");
 
+            ValidateLabelIdentifier();
+            Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
+            ValidateLabelIdentifier();
+
+            Consume(TokenType.RIGHT_BRACKET, "corchete derecho ']'");
+            Consume(TokenType.LEFT_PAREN, "paréntesis izquierdo '('");
+
+            Expr condition = ParseExpression();
+            Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
+
+            return new GoToStatement(labelToken.lexeme, condition);
+        }
+        private void ValidateVarIdentifier()
+        {
+            if (Peek().lexeme.Contains('-'))
+            {
+                throw new Exception($"Error en {Peek().line}: el identificador de variable {Peek().lexeme} no puede contener el caracter '-'");
+            }
+
+        }
+        private void ValidateLabelIdentifier()
+        {
+            if (Peek().lexeme.Contains('_'))
+            {
+                throw new Exception($"Error en {Peek().line}: el label {Peek().lexeme} no puede contener el caracter '_'");
+            }
+
+        }
+        public Statement ParseBinaryExpression()
+        {
+        }
+        public Statement ParseUnaryExpression() { }
+        public Statement ParseGroupingExpression() { }
 
 
 
@@ -186,11 +238,6 @@ namespace Compiler
             }
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
-        public Statement ParseBinaryExpression()
-        {
-        }
-        public Statement ParseUnaryExpression() { }
-        public Statement ParseGroupingExpression() { }
         public Expr ParseIsBrushColor()
         {
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
@@ -238,7 +285,7 @@ namespace Compiler
         public Expr ParseGetColorCount() { }
         public Expr ParseIsColor() { }
 
-//las funciones todavía no tienen comprobacion de int
+        //las funciones todavía no tienen comprobacion de int
         public Expr ParseIsCanvasColor()
         {
             Token funcToken = Consume(TokenType.IS_CANVAS_COLOR, "IsCanvasColor");
