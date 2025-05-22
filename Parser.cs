@@ -1,5 +1,3 @@
-using System.Data.Common;
-using System.Drawing;
 
 namespace Compiler
 {
@@ -52,7 +50,7 @@ namespace Compiler
             var statements = new List<ASTNode>();
             while (Peek().type != TokenType.EOF)
             {
-                statements.Add(ParseStatement());
+                statements.Add(ParseStatements());
             }
             return statements;
         }
@@ -99,7 +97,7 @@ namespace Compiler
             return tokens[tokens.Count - 1];
         }
 
-        private ASTNode ParseStatement()
+        private ASTNode ParseStatements()
         {
             //aquí debe haber algo respecto a el salto de línea
             string lexeme = Peek().lexeme;
@@ -118,7 +116,7 @@ namespace Compiler
             }
             else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.NEW_LINE)
             {
-                // return New(); algo para etiquetas
+                ParseLabelDeclaration();
             }
             else if (Peek().type == TokenType.GO_TO)
             {
@@ -196,6 +194,13 @@ namespace Compiler
                 throw new Exception($"Error en {Peek().line}: el label {Peek().lexeme} no puede contener el caracter '_'");
             }
 
+        }
+        private Statement ParseLabelDeclaration()
+        {
+            ValidateLabelIdentifier();
+            Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
+            Consume(TokenType.NEW_LINE, "salto de línea después de etiqueta");
+            return new LabelDeclaration(labelToken.lexeme);
         }
         public Statement ParseBinaryExpression()
         {
@@ -281,8 +286,41 @@ namespace Compiler
             return new CallFunction(TokenType.GET_ACTUAL_Y, new List<Expr>());
         }
 
-        public Expr ParseGetCanvasSize() { }
-        public Expr ParseGetColorCount() { }
+        public Expr ParseGetCanvasSize()
+        {
+            Consume(TokenType.GET_CANVAS_SIZE, "GetCanvasSize");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            return new CallFunction(TokenType.GET_CANVAS_SIZE, new List<Expr>());
+        }
+        public Expr ParseGetColorCount()
+        {
+            Token funcToken = Consume(TokenType.GET_COLOR_COUNT, "GetColorCount");
+            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
+            List<Expr> parameters = new List<Expr>();
+
+            if (!Match(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(ParseExpression());
+                } while (Match(TokenType.COMMA));
+
+                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+
+                if (parameters.Count != 5)
+                {
+                    throw new Exception($"Error en {funcToken.line}: GetColorCount requiere 5 parámetros (color, x1, y1, x2, y2)");
+                }
+
+                if (!(parameters[0] is LiteralExpr) || !colors.ContainsKey(((LiteralExpr)parameters[0]).Value.ToString()))
+                {
+                    throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido");
+                }
+            }
+
+            return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
+        }
         public Expr ParseIsColor() { }
 
         //las funciones todavía no tienen comprobacion de int

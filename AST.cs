@@ -115,6 +115,7 @@ namespace Compiler
               // T VisitExprStatement<T>(ExpressionStmt statement);
               T VisitVarDeclaration<T>(VarDeclaration statement);
               T VisitGoToStatement<T>(GoToStatement statement);
+              T VisitLabelDeclaration<T>(LabelDeclaration statment);
        }
 
        public class CallFunction : Expr
@@ -227,5 +228,19 @@ namespace Compiler
                      return visitor.VisitGoToStatement<T>(this);
               }
        }
+       public class LabelDeclaration : Statement
+       {
+              public string LabelName { get; }
 
+              public LabelDeclaration(string labelName)
+              {
+                     LabelName = labelName;
+              }
+
+              public override T Accept<T>(IStmtVisitor visitor)
+              {
+                     return visitor.VisitLabelDeclaration<T>(this);
+              }
+
+       }
 }
