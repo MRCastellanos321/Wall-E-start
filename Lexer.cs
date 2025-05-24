@@ -80,7 +80,6 @@ namespace Compiler
         }
         private void Tokenizar()
         {
-            //aquí falta toda la lógica de los labels
             var tokens = new List<Token>();
 
             while (position < sourceCode.Length)
@@ -89,29 +88,32 @@ namespace Compiler
                 char currentChar = Peek();
                 switch (currentChar)
                 {
-                    case '(': tokens.Add(new Token(TokenType.LEFT_PAREN, "(", "(", line)); break;
-                    case ')': tokens.Add(new Token(TokenType.RIGHT_PAREN, ")", ")", line)); break;
-                    case '{': tokens.Add(new Token(TokenType.LEFT_BRACE, "{", "{", line)); break;
-                    case '}': tokens.Add(new Token(TokenType.RIGHT_BRACE, "}", "}", line)); break;
-                    case ',': tokens.Add(new Token(TokenType.COMMA, ",", ",", line)); break;
-                    case '.': tokens.Add(new Token(TokenType.DOT, ".", ".", line)); break;
-                    case '-': tokens.Add(new Token(TokenType.MINUS, "-", "-", line)); break;
-                    case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); break;
-                    case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); break;
-                    case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); break;
-                    case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); break;
+                    case '/': tokens.Add(new Token(TokenType.DIVIDE, "/", "/", line)); Advance(); break;
+                    case '(': tokens.Add(new Token(TokenType.LEFT_PAREN, "(", "(", line)); Advance(); break;
+                    case ')': tokens.Add(new Token(TokenType.RIGHT_PAREN, ")", ")", line)); Advance(); break;
+                    case '[': tokens.Add(new Token(TokenType.LEFT_BRACKET, "[", "[", line)); Advance(); break;
+                    case ']': tokens.Add(new Token(TokenType.RIGHT_BRACKET, "]", "]", line)); Advance(); break;
+                    case '{': tokens.Add(new Token(TokenType.LEFT_BRACE, "{", "{", line)); Advance(); break;
+                    case '}': tokens.Add(new Token(TokenType.RIGHT_BRACE, "}", "}", line)); Advance(); break;
+                    case ',': tokens.Add(new Token(TokenType.COMMA, ",", ",", line)); Advance(); break;
+                    case '.': tokens.Add(new Token(TokenType.DOT, ".", ".", line)); Advance(); break;
+                    case '-': tokens.Add(new Token(TokenType.MINUS, "-", "-", line)); Advance(); break;
+                    case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); Advance(); break;
+                    case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); Advance(); break;
+                    case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); Advance(); break;
+                    case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); Advance(); break;
                     case '<':
-                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
-                        else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
-                        else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
+                        if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
+                        else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.LESS, "<", "<", line));Advance(); }
                         break;
                     case '>':
-                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }
-                        else { tokens.Add(new Token(TokenType.GREATER, ">", ">", line)); }
+                        if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.GREATER, ">", ">", line)); Advance(); }
                         break;
                     case '=':
-                        if (sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); break; }
-                        else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); }
+                        if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); Advance(); break; }
+                        else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); Advance(); }
                         break;
 
                     default:

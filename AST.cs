@@ -10,6 +10,7 @@ namespace Compiler
               T VisitGroupingExpr<T>(GroupingExpr expr);
               T VisitUnaryExpr<T>(UnaryExpr expr);
               T VisitCallFunction<T>(CallFunction expr);
+              T VisitVariableExpr<T>(CallFunction expr);
        }
 
        // 
@@ -96,6 +97,22 @@ namespace Compiler
               public override T Accept<T>(IExprVisitor visitor)
               {
                      return visitor.VisitUnaryExpr<T>(this);
+              }
+
+       }
+       public class VariableExpr : Expr
+       {
+
+              public string Identifier { get; }
+
+              public VariableExpr(string identifier)
+              {
+                     Identifier = identifier;
+              }
+
+              public override T Accept<T>(IExprVisitor visitor)
+              {
+                     return visitor.VisitVariableExpr<T>(this);
               }
 
        }

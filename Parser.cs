@@ -69,6 +69,12 @@ namespace Compiler
                 return tokens[position++];
             return Peek();
         }
+        private Token Previous()
+        {
+            if (position - 1 < 0)
+                return tokens[0];
+            return tokens[position - 1];
+        }
 
         private bool Match(TokenType type)
         {
@@ -99,7 +105,7 @@ namespace Compiler
 
         private ASTNode ParseStatements()
         {
-            //aquí debe haber algo respecto a el salto de línea
+            //aquí debe haber algo respecto al salto de línea
             string lexeme = Peek().lexeme;
             if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
             {
@@ -122,7 +128,7 @@ namespace Compiler
             {
                 ParseLabelStatement();
             }
-            //aquí falta la lógica del loop
+
             throw new Exception($"Statement no identificado en la línea {Peek().line}");
         }
 
@@ -136,31 +142,196 @@ namespace Compiler
             return new VarDeclaration(ident.lexeme, value);
         }
 
+        /* public Expr ParseExpression()
+         {
+             Token token = Peek();
+             //aquí hay que ver algo para bool
+             if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
+             {
+                 return new LiteralExpr(token.lexeme);
+             }
+             if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> exprParseMethod))
+             {
+                 return exprParseMethod();
+             }
+             if (token.type == TokenType.LEFT_PAREN)
+             {
+                 //creo que aquí haya que hacer algo con respeco a operadores y demás, la expr binaria, etc
+                 Advance();
+                 Expr expr = ParseExpression();
+                 Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
+                 return new GroupingExpr(expr);
+             }
+             //esto funciona para cuando una función pide parse expresion para sus párametros?
+             if (token.type == TokenType.IDENTIFIER && token.lexeme.Contains('-'))
+             {
+                 throw new Exception($"Error en {token.line}: no se aceptan etiquetas como expresiones aritméticas");
+             }
+             throw new Exception($"Error en {token.line}: Expresión asignada no válida.");
+         }*/
+        /*   public Expr ParseExpression()
+           {
+               Token token = Peek();
+               if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
+               {
+                   Advance();
+                   var literal = new LiteralExpr(token.lexeme);
+                   if (IsBinaryOperator(Peek().type))
+                   {
+                       Token op = Advance();
+                       Expr right = ParseExpression();
+                       return new BinaryExpr(literal, op.lexeme, right);
+                   }
+                   return literal;
+               }
+
+
+               if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> exprParseMethod))
+               {
+                   return exprParseMethod();
+               }
+
+               if (token.type == TokenType.LEFT_PAREN)
+               {
+                   Advance();
+                   Expr expr = ParseExpression();
+                   Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
+                   return new GroupingExpr(expr);
+               }
+
+               if (token.type == TokenType.IDENTIFIER && token.lexeme.Contains('-'))
+               {
+                   throw new Exception($"Error en {token.line}: no se aceptan etiquetas como expresiones aritméticas");
+               }
+
+               if (token.type == TokenType.IDENTIFIER)
+               {
+                   Advance();
+                   var variable = new VariableExpr(token.lexeme);
+
+                   if (IsBinaryOperator(Peek().type))
+                   {
+                       Token op = Advance();
+                       Expr right = ParseExpression();
+                       return new BinaryExpr(variable, op.lexeme, right);
+                   }
+
+                   return variable;
+               }
+
+               throw new Exception($"Error en {token.line}: Expresión asignada no válida.");
+           }
+
+           private bool IsBinaryOperator(TokenType type)
+           {
+               return type == TokenType.PLUS || type == TokenType.MINUS ||
+                      type == TokenType.MULTIPLY || type == TokenType.DIVIDE ||
+                      type == TokenType.EQUAL_EQUAL || type == TokenType.LESS ||
+                      type == TokenType.LESS_EQUAL || type == TokenType.GREATER ||
+                      type == TokenType.GREATER_EQUAL;
+           }
+           private Expr ParsePrimaryExpression()
+           {
+               Token token = Peek();
+
+               if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
+               {
+                   Advance();
+                   return new LiteralExpr(token.lexeme);
+               }
+
+               if (token.type == TokenType.IDENTIFIER)
+               {
+                   Advance();
+                   return new VariableExpr(token.lexeme); 
+               }
+
+               if (token.type == TokenType.LEFT_PAREN)
+               {
+                   Advance();
+                   Expr expr = ParseExpression();
+                   Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression");
+                   return new GroupingExpr(expr);
+               }
+
+               throw new Exception($"Error en {token.line}: Expresión primaria no válida");
+           }*/
+        // Método principal (ya lo tenías)
         public Expr ParseExpression()
         {
-            Token token = Peek();
-            //aquí hay que ver algo para bool
-            if (token.type == TokenType.NUMBER || token.type == TokenType.STRING)
+            return ParseBinaryExpression();
+        }
+
+
+        public Expr ParseBinaryExpression()
+        {
+            Expr left = ParsePrimary();
+
+
+            var binaryOperators = new[] {
+        TokenType.EQUAL_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL,
+        TokenType.GREATER, TokenType.GREATER_EQUAL,
+        TokenType.PLUS, TokenType.MINUS,
+        TokenType.MULTIPLY, TokenType.DIVIDE
+        };
+
+            while (binaryOperators.Contains(Peek().type))
             {
+                Token op = Advance();
+                Expr right = ParsePrimary();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+
+            return left;
+        }
+
+
+        private Expr ParsePrimary()
+        {
+            /
+            if (Peek().type == TokenType.NUMBER || Peek().type == TokenType.STRING)
+            {
+                Token token = Advance();
                 return new LiteralExpr(token.lexeme);
             }
-            if (exprFunctionParsers.TryGetValue(token.lexeme, out Func<Expr> exprParseMethod))
+
+
+            if (exprFunctionParsers.TryGetValue(Peek().lexeme, out Func<Expr> func))
             {
-                return exprParseMethod();
+                return func();
             }
-            if (token.type == TokenType.LEFT_PAREN)
+
+
+            if (Match(TokenType.LEFT_PAREN))
             {
                 Expr expr = ParseExpression();
-                Consume(TokenType.RIGHT_PAREN, "un ) para cerrar la expresión");
+                Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression");
                 return new GroupingExpr(expr);
             }
-            //esto funciona para cuando una función pide parse expresion para sus párametros
-            if (token.type == TokenType.IDENTIFIER && token.lexeme.Contains('-'))
+
+
+            if (Peek().type == TokenType.IDENTIFIER)
             {
-                throw new Exception($"Error en {token.line}: no se aceptan etiquetas como expresiones aritméticas");
+                if (Peek().lexeme.Contains('-'))
+                {
+                    throw new Exception($"Error en {Peek().line}: Identificador inválido");
+                }
+                Token token = Advance();
+                return new VariableExpr(token.lexeme);
             }
-            throw new Exception($"Error en {token.line}: Expresión asignada no válida.");
+
+
+            if (Match(TokenType.MINUS))
+            {
+                Token op = Previous();
+                Expr right = ParsePrimary();
+                return new UnaryExpr(op.lexeme, right);
+            }
+
+            throw new Exception($"Error en {Peek().line}: Expresión no reconocida");
         }
+
+
 
         private Statement ParseLabelStatement()
         {
@@ -202,9 +373,6 @@ namespace Compiler
             Consume(TokenType.NEW_LINE, "salto de línea después de etiqueta");
             return new LabelDeclaration(labelToken.lexeme);
         }
-        public Statement ParseBinaryExpression()
-        {
-        }
         public Statement ParseUnaryExpression() { }
         public Statement ParseGroupingExpression() { }
 
@@ -223,6 +391,7 @@ namespace Compiler
             {
                 parameters.Add(ParseExpression());
             } while (Match(TokenType.COMMA));
+            //quizás debamos pensar algo aquí si hay un problema con las comas
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
             if (parameters.Count != 2)
             {
