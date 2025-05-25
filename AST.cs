@@ -12,8 +12,6 @@ namespace Compiler
               T VisitCallFunction<T>(CallFunction expr);
               T VisitVariableExpr<T>(CallFunction expr);
        }
-
-       // 
        public abstract class ASTNode
        {
 
@@ -102,9 +100,7 @@ namespace Compiler
        }
        public class VariableExpr : Expr
        {
-
               public string Identifier { get; }
-
               public VariableExpr(string identifier)
               {
                      Identifier = identifier;

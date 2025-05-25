@@ -55,7 +55,7 @@ namespace Compiler
           {"Size", TokenType.SIZE},
           {"DrawLine", TokenType.DRAW_LINE},
           {"DrawCircle", TokenType.DRAW_CIRCLE},
-          {"DrawRECTANGLE", TokenType.DRAW_RECTANGLE},
+          {"DrawRectangle", TokenType.DRAW_RECTANGLE},
           { "Fill", TokenType.FILL},
           { "GoTo", TokenType.GO_TO},
           {"IsColor", TokenType.IS_COLOR},
@@ -102,10 +102,11 @@ namespace Compiler
                     case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); Advance(); break;
                     case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); Advance(); break;
                     case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); Advance(); break;
+                   // case '"': tokens.Add(new Token(TokenType.DOUBLE_COMMA, '"', '"', line)); Advance(); break;
                     case '<':
                         if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
                         else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); Advance(); break; }
-                        else { tokens.Add(new Token(TokenType.LESS, "<", "<", line));Advance(); }
+                        else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); Advance(); }
                         break;
                     case '>':
                         if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); Advance(); break; }
@@ -115,6 +116,7 @@ namespace Compiler
                         if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); Advance(); break; }
                         else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); Advance(); }
                         break;
+
 
                     default:
                         if (IsDigit(currentChar)) { CheckNumber(); }
