@@ -86,6 +86,11 @@ namespace Compiler
             return false;
         }
 
+        private void ConsumeNewLineAfterStatement()
+        {
+            while (Match(TokenType.NEW_LINE)) { }
+        }
+
         private Token Consume(TokenType type, string errorMessage)
         {
             if (Peek().type == type)
@@ -109,24 +114,35 @@ namespace Compiler
             string lexeme = Peek().lexeme;
             if (commandParsers.TryGetValue(lexeme, out Func<Statement> parseMethod))
             {
-                return parseMethod();
+                Statement func = parseMethod();
+                ConsumeNewLineAfterStatement();
+                return func;
             }
             else if (exprFunctionParsers.TryGetValue(lexeme, out Func<Expr> exprParseMethod))
             {
-                return exprParseMethod();
+                Statement exprFunc = parseMethod();
+                ConsumeNewLineAfterStatement();
+                return exprFunc;
             }
 
             else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.ARROW)
             {
-                return ParseAssignmentStatement();
+                Statement varAsig = ParseAssignmentStatement();
+                ConsumeNewLineAfterStatement();
+                return varAsig;
             }
             else if (Peek().type == TokenType.IDENTIFIER && LookAhead(1).type == TokenType.NEW_LINE)
             {
-                ParseLabelDeclaration();
+                Statement label = ParseLabelDeclaration();
+                ConsumeNewLineAfterStatement();
+                return label;
+
             }
             else if (Peek().type == TokenType.GO_TO)
             {
-                ParseLabelStatement();
+                Statement goTo = ParseLabelStatement();
+                ConsumeNewLineAfterStatement();
+                return goTo;
             }
 
             throw new Exception($"Statement no identificado en la línea {Peek().line}");
@@ -249,10 +265,10 @@ namespace Compiler
         {
             ValidateLabelIdentifier();
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
-            Consume(TokenType.NEW_LINE, "salto de línea después de etiqueta");
+            Consume(TokenType.NEW_LINE, "salto de línea");
             return new LabelDeclaration(labelToken.lexeme);
         }
-    
+
 
 
 
@@ -284,6 +300,7 @@ namespace Compiler
                     throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un entero.");
                 }
             }
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Expr ParseIsBrushColor()
@@ -311,6 +328,7 @@ namespace Compiler
             {
                 throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
             }
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.IS_BRUSH_COLOR, parameters);
         }
         public Expr ParseActualX()
@@ -318,6 +336,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_X, "ActualX");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_ACTUAL_X, new List<Expr>());
         }
 
@@ -326,6 +345,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_Y, "ActualY");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_ACTUAL_Y, new List<Expr>());
         }
 
@@ -334,6 +354,7 @@ namespace Compiler
             Consume(TokenType.GET_CANVAS_SIZE, "GetCanvasSize");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_CANVAS_SIZE, new List<Expr>());
         }
         public Expr ParseGetColorCount()
@@ -361,7 +382,7 @@ namespace Compiler
                     throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido");
                 }
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
         }
         public Expr ParseIsColor() { }
@@ -392,7 +413,7 @@ namespace Compiler
                     throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido.");
                 }
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.IS_CANVAS_COLOR, parameters);
         }
         public Statement ParseColor()
@@ -406,7 +427,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: Color debe recibir un literal válido.");
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.COLOR, new List<Expr> { colorExpr });
         }
         public Statement ParseSize()
@@ -420,7 +441,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: Size debe ser un entero.");
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.SIZE, new List<Expr> { sizeExpr });
         }
 
@@ -448,7 +469,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_LINE, parameters);
         }
 
@@ -476,7 +497,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros.");
             }
-
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_CIRCLE, parameters);
         }
         public Statement ParseDrawRectangle()
@@ -503,6 +524,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
             }
+            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_RECTANGLE, parameters);
         }
 
