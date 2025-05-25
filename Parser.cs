@@ -7,8 +7,7 @@ namespace Compiler
         private int position = 0; //es separada de la de las otras clases
         private readonly Dictionary<string, Func<Statement>> commandParsers;
         private readonly Dictionary<string, Func<Expr>> exprFunctionParsers;
-        private readonly Dictionary<string, string> colors;
-        //  
+        private readonly HashSet<string> colors;
         public Parser(List<Token> Tokens)
         {
             tokens = Tokens;
@@ -31,19 +30,7 @@ namespace Compiler
             {"GetCanvasSize", ParseGetCanvasSize},
             {"GetColorCount", ParseGetColorCount},
          };
-
-            colors = new Dictionary<string, string>()
-         {
-            {"Blue","Blue"},
-            { "Red", "Red"},
-            { "Green", "Green"},
-            { "Yellow", "Yellow" },
-            {"Purple","Purple"},
-            {"Black","Black"},
-            { "White","White"},
-            {"Grey", "Grey"},
-            { "Transparent", "Transparent" },
-         };
+            colors = new HashSet<string> { "Blue", "Green", "Purple", "Yellow",  "Grey", "Transparent", "White", "Red", "Black"};
         }
         public List<ASTNode> ParsePrograma()
         {
@@ -324,7 +311,7 @@ namespace Compiler
                 throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un literal.");
             }
             string parameterColor;
-            if (!colors.TryGetValue(((LiteralExpr)parameters[0]).Value.ToString(), out parameterColor))
+            if (!colors.Contains(((LiteralExpr)parameters[0]).Value.ToString()))
             {
                 throw new Exception($"Error de tipo en {funcToken.line}: el argumento de IsColorBrush debe ser un color válido.");
             }
@@ -377,7 +364,7 @@ namespace Compiler
                     throw new Exception($"Error en {funcToken.line}: GetColorCount requiere 5 parámetros (color, x1, y1, x2, y2)");
                 }
 
-                if (!(parameters[0] is LiteralExpr) || !colors.ContainsKey(((LiteralExpr)parameters[0]).Value.ToString()))
+                if (!(parameters[0] is LiteralExpr) || !colors.Contains(((LiteralExpr)parameters[0]).Value.ToString()))
                 {
                     throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido");
                 }
@@ -408,7 +395,7 @@ namespace Compiler
                     throw new Exception($"Error en {funcToken.line}: IsCanvasColor requiere 3 parámetros (color, vertical, horizontal).");
                 }
 
-                if (!(parameters[0] is LiteralExpr) || !colors.ContainsKey(((LiteralExpr)parameters[0]).Value.ToString()))
+                if (!(parameters[0] is LiteralExpr) || !colors.Contains(((LiteralExpr)parameters[0]).Value.ToString()))
                 {
                     throw new Exception($"Error en {funcToken.line}: El primer parámetro debe ser un color válido.");
                 }
@@ -423,7 +410,7 @@ namespace Compiler
             Expr colorExpr = ParseExpression();
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
 
-            if (!(colorExpr is LiteralExpr literal) || !colors.ContainsKey(literal.Value.ToString()))
+            if (!(colorExpr is LiteralExpr literal) || !colors.Contains(literal.Value.ToString()))
             {
                 throw new Exception($"Error en {funcToken.line}: Color debe recibir un literal válido.");
             }
