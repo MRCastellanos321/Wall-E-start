@@ -2,7 +2,7 @@
 {
     public enum TokenType
     {
-        
+
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, LEFT_BRACKET, RIGHT_BRACKET,
         COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, MULTIPLY, NEW_LINE, DIVIDE, DOUBLE_COMMA, BOOLEAN,
 
@@ -11,10 +11,10 @@
         GREATER, GREATER_EQUAL,
         LESS, LESS_EQUAL,
         ARROW,
-       
+
         IDENTIFIER, STRING, NUMBER,
-       
-        AND,IF, OR,
+
+        AND, IF, OR,
         TRUE, VAR, SPAWN_POINT, IS_BRUSH_COLOR, COLOR, GO_TO, IS_COLOR, IS_BRUSH_SIZE, IS_CANVAS_COLOR,
         GET_ACTUAL_X, GET_ACTUAL_Y, GET_CANVAS_SIZE, GET_COLOR_COUNT, DRAW_LINE, DRAW_RECTANGLE, DRAW_CIRCLE, FILL, SIZE,
         EOF
@@ -32,14 +32,7 @@
             this.literal = literal;
             this.line = line;
         }
-        public string toString()
-        {
-            return type + " " + lexeme + " " + literal;
-        }
-       public static void Main(string[] args)
-        {
-            Console.WriteLine("hi");
-        }
     }
-
 }
+
+

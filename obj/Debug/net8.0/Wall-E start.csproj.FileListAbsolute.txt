@@ -2,3 +2,14 @@
 /home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.AssemblyInfoInputs.cache
 /home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.AssemblyInfo.cs
 /home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.csproj.CoreCompileInputs.cache
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.sourcelink.json
+/home/maya/Wall-E start/bin/Debug/net8.0/Wall-E start
+/home/maya/Wall-E start/bin/Debug/net8.0/Wall-E start.deps.json
+/home/maya/Wall-E start/bin/Debug/net8.0/Wall-E start.runtimeconfig.json
+/home/maya/Wall-E start/bin/Debug/net8.0/Wall-E start.dll
+/home/maya/Wall-E start/bin/Debug/net8.0/Wall-E start.pdb
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.dll
+/home/maya/Wall-E start/obj/Debug/net8.0/refint/Wall-E start.dll
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.pdb
+/home/maya/Wall-E start/obj/Debug/net8.0/Wall-E start.genruntimeconfig.cache
+/home/maya/Wall-E start/obj/Debug/net8.0/ref/Wall-E start.dll

@@ -13,7 +13,7 @@ namespace Compiler
             tokens = Tokens;
             commandParsers = new Dictionary<string, Func<Statement>>()
          {
-            { "SpawnPoint", ParseSpawnPoint},
+            { "Spawn", ParseSpawnPoint},
             { "Color", ParseColor},
             { "Size", ParseSize},
             { "DrawLine", ParseDrawLine},
@@ -130,6 +130,10 @@ namespace Compiler
                 Statement goTo = ParseLabelStatement();
                 ConsumeNewLineAfterStatement();
                 return goTo;
+            }
+            else if (Peek().type == TokenType.NEW_LINE)
+            {
+                ConsumeNewLineAfterStatement();
             }
 
             throw new Exception($"Statement no identificado en la línea {Peek().line}");
@@ -372,7 +376,7 @@ namespace Compiler
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
         }
-        public Expr ParseIsColor() { }
+        //public Expr ParseIsColor() { }
 
         //las funciones todavía no tienen comprobacion de int
         public Expr ParseIsCanvasColor()

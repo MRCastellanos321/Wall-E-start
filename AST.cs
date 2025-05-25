@@ -10,7 +10,7 @@ namespace Compiler
               T VisitGroupingExpr<T>(GroupingExpr expr);
               T VisitUnaryExpr<T>(UnaryExpr expr);
               T VisitCallFunction<T>(CallFunction expr);
-              T VisitVariableExpr<T>(CallFunction expr);
+              T VisitVariableExpr<T>(VariableExpr expr);
        }
        public abstract class ASTNode
        {
