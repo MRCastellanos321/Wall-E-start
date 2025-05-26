@@ -109,17 +109,27 @@ namespace Compiler
                 case '"': ReadString(); break;
                 case '\0': return;
                 case '&':
-                    if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '&') { tokens.Add(new Token(TokenType.AND, "&&", "&&", line)); Advance(); break; }
+                    if (position < sourceCode.Length && sourceCode[position] == '&') { tokens.Add(new Token(TokenType.AND, "&&", "&&", line)); Advance(); break; }
                     else { throw new Exception("Caracter & no puede ir solo"); }
 
                 case '|':
-                    if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '|') { tokens.Add(new Token(TokenType.OR, "||", "||", line)); Advance(); break; }
+                    if (position < sourceCode.Length && sourceCode[position] == '|') { tokens.Add(new Token(TokenType.OR, "||", "||", line)); Advance(); break; }
                     else { throw new Exception("Caracter | no puede ir solo"); }
 
                 case '<':
-                    if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
-                    else if (sourceCode[position + 1] == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
-                    else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
+                    if (position < sourceCode.Length && sourceCode[position] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
+                    else if (position< sourceCode.Length && sourceCode[position] == '-')
+                    {
+                        Console.Write(sourceCode[position]);
+                        Console.Write(sourceCode[position]);
+                        tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break;
+                    }
+                    else
+                    {
+                        Console.Write(sourceCode[position]);
+                        Console.Write(sourceCode[position]);
+                        tokens.Add(new Token(TokenType.LESS, "<", "<", line));
+                    }
                     break;
                 case '>':
                     if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }
@@ -200,7 +210,7 @@ namespace Compiler
             }
             Advance();
             string value = sourceCode.Substring(start + 1, position - start - 2);
-            tokens.Add(new Token(TokenType.IDENTIFIER, value, value, line));
+            tokens.Add(new Token(TokenType.STRING, value, value, line));
             //aqui tengo que revisar bien los indices para verificar que el identifier se esté pasando sin comillas
         }
     }
