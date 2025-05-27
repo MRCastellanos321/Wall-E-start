@@ -4,7 +4,7 @@ namespace Compiler
     public class Parser
     {
         public List<Token> tokens;
-        private int position = 0; //es separada de la de las otras clases
+        private int position = 0;
         private readonly Dictionary<string, Func<Statement>> commandParsers;
         private readonly Dictionary<string, Func<Expr>> exprFunctionParsers;
         private readonly HashSet<string> colors;
@@ -142,7 +142,6 @@ namespace Compiler
 
         public Statement ParseAssignmentStatement()
         {
-            ValidateVarIdentifier();
             Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
             Consume(TokenType.ARROW, "una flecha '<-' en la asignación");
             Expr value = ParseExpression();
@@ -222,38 +221,34 @@ namespace Compiler
         {
             Consume(TokenType.GO_TO, "GoTo");
             Consume(TokenType.LEFT_BRACKET, "corchete izquierdo '['");
-
-            ValidateLabelIdentifier();
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
-            ValidateLabelIdentifier();
-
             Consume(TokenType.RIGHT_BRACKET, "corchete derecho ']'");
             Consume(TokenType.LEFT_PAREN, "paréntesis izquierdo '('");
             //aquí seguramente hay que ver algo separado pq la condición tiene que ser bool
             Expr condition = ParseExpression();
             Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
-
             return new GoToStatement(labelToken.lexeme, condition);
         }
-        private void ValidateVarIdentifier()
-        {
-            if (Peek().lexeme.Contains('-'))
-            {
-                throw new Exception($"Error en {Peek().line}: el identificador de variable {Peek().lexeme} no puede contener el caracter '-'");
-            }
 
-        }
-        private void ValidateLabelIdentifier()
-        {
-            if (Peek().lexeme.Contains('_'))
-            {
-                throw new Exception($"Error en {Peek().line}: el label {Peek().lexeme} no puede contener el caracter '_'");
-            }
+        /*       private void ValidateVarIdentifier()
+                {
+                    if (Peek().lexeme.Contains('-'))
+                    {
+                        throw new Exception($"Error en {Peek().line}: el identificador de variable {Peek().lexeme} no puede contener el caracter '-'");
+                    }
 
-        }
+                }
+                private void ValidateLabelIdentifier()
+
+                {
+                    if (Peek().lexeme.Contains('_'))
+                    {
+                        throw new Exception($"Error en {Peek().line}: el label {Peek().lexeme} no puede contener el caracter '_'");
+                    }
+
+                }*/
         private Statement ParseLabelDeclaration()
         {
-            ValidateLabelIdentifier();
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
             Consume(TokenType.NEW_LINE, "salto de línea");
             return new LabelDeclaration(labelToken.lexeme);

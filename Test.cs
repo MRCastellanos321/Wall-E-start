@@ -11,7 +11,7 @@ namespace Compiler
                 Size(3)
                 DrawLine(1, 0, 10)
                 counter <- 0
-                loop-start
+                loop_start
                 DrawCircle(1, 1, 2)
                 counter <- counter + 1
                 Fill()
@@ -49,18 +49,19 @@ namespace Compiler
                 Lexer lexer = new Lexer(sourceCode);
                 List<Token> tokens = lexer.ScanTokens().ToList();
 
+                Parser parser = new Parser(tokens);
+                List<ASTNode> ast = parser.ParsePrograma();
+
                 foreach (var token in tokens)
                 {
                     Console.WriteLine($"{token.type} '{token.lexeme}' {token.line}");
                 }
-
-                Parser parser = new Parser(tokens);
-                List<ASTNode> ast = parser.ParsePrograma();
-                //foreach(ASTNode node in ast){ Console.WriteLine node}
+                AstPrinter printer = new AstPrinter();
+                Console.WriteLine(printer.Print(ast));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nERROR: {ex.Message}");
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
     }

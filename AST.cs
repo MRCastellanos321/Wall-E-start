@@ -3,14 +3,14 @@ using System.Diagnostics;
 namespace Compiler
 {
        #region 
-       public interface IExprVisitor
+       public interface IExprVisitor<T>
        {//el q luego va a leer todo esto
-              T VisitBinaryExpr<T>(BinaryExpr expr);
-              T VisitLiteralExpr<T>(LiteralExpr expr);
-              T VisitGroupingExpr<T>(GroupingExpr expr);
-              T VisitUnaryExpr<T>(UnaryExpr expr);
-              T VisitCallFunction<T>(CallFunction expr);
-              T VisitVariableExpr<T>(VariableExpr expr);
+              T VisitBinaryExpr(BinaryExpr expr);
+              T VisitLiteralExpr(LiteralExpr expr);
+              T VisitGroupingExpr(GroupingExpr expr);
+              T VisitUnaryExpr(UnaryExpr expr);
+              T VisitCallFunction(CallFunction expr);
+              T VisitVariableExpr(VariableExpr expr);
        }
        public abstract class ASTNode
        {
@@ -19,7 +19,7 @@ namespace Compiler
        public abstract class Expr : ASTNode
        {
               // Esto es para q todo el mudno tenga el accept
-              public abstract T Accept<T>(IExprVisitor visitor);
+              public abstract T Accept<T>(IExprVisitor<T> visitor);
        }
 
        //este es para operaciones suma etc
@@ -37,12 +37,23 @@ namespace Compiler
                      Right = right;
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitBinaryExpr<T>(this);
+                     return visitor.VisitBinaryExpr(this);
                      //esto es para q acept la instancia de la clase
               }
 
+              /*// Ejemplo para BinaryExpr:
+              public override T Accept<T>(IExprVisitor<T> visitor)
+              {
+                     return visitor.VisitBinaryExpr(this);
+              }
+
+// Ejemplo para CallComand:
+public override T Accept<T>(IStmtVisitor<T> visitor)
+{
+    return visitor.VisitCallComand<T>(this);
+}*/
        }
 
        // Aqui van numeros y strings
@@ -56,9 +67,9 @@ namespace Compiler
                      Value = value;
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitLiteralExpr<T>(this);
+                     return visitor.VisitLiteralExpr(this);
               }
 
        }
@@ -73,9 +84,9 @@ namespace Compiler
                      Expression = expression;
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitGroupingExpr<T>(this);
+                     return visitor.VisitGroupingExpr(this);
               }
 
        }
@@ -92,9 +103,9 @@ namespace Compiler
                      Right = right;
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitUnaryExpr<T>(this);
+                     return visitor.VisitUnaryExpr(this);
               }
 
        }
@@ -106,9 +117,9 @@ namespace Compiler
                      Identifier = identifier;
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitVariableExpr<T>(this);
+                     return visitor.VisitVariableExpr(this);
               }
 
        }
@@ -117,18 +128,15 @@ namespace Compiler
 
        public abstract class Statement : ASTNode
        {
-              public abstract T Accept<T>(IStmtVisitor visitor);
+              public abstract T Accept<T>(IStmtVisitor<T> visitor);
        }
 
-       public interface IStmtVisitor
+       public interface IStmtVisitor<T>
        {
-              // T VisitCallFunction<T>(CallFunction statement);
-              T VisitCallComand<T>(CallComand statement);
-              // T VisitIfStatement<T>(IfStatement statement);
-              // T VisitExprStatement<T>(ExpressionStmt statement);
-              T VisitVarDeclaration<T>(VarDeclaration statement);
-              T VisitGoToStatement<T>(GoToStatement statement);
-              T VisitLabelDeclaration<T>(LabelDeclaration statment);
+              T VisitCallComand(CallComand statement);
+              T VisitVarDeclaration(VarDeclaration statement);
+              T VisitGoToStatement(GoToStatement statement);
+              T VisitLabelDeclaration(LabelDeclaration statment);
        }
 
        public class CallFunction : Expr
@@ -146,9 +154,9 @@ namespace Compiler
                      //las funciones del pdf son en realidad comandos y no tienen nada dentro
               }
 
-              public override T Accept<T>(IExprVisitor visitor)
+              public override T Accept<T>(IExprVisitor<T> visitor)
               {
-                     return visitor.VisitCallFunction<T>(this);
+                     return visitor.VisitCallFunction(this);
               }
 
        }
@@ -166,9 +174,9 @@ namespace Compiler
                      //las funciones del pdf son en realidad comandos y no tienen nada dentro
               }
 
-              public override T Accept<T>(IStmtVisitor visitor)
+              public override T Accept<T>(IStmtVisitor<T> visitor)
               {
-                     return visitor.VisitCallComand<T>(this);
+                     return visitor.VisitCallComand(this);
               }
 
        }
@@ -205,9 +213,9 @@ namespace Compiler
                      Initializer = initializer;
               }
 
-              public override T Accept<T>(IStmtVisitor visitor)
+              public override T Accept<T>(IStmtVisitor<T> visitor)
               {
-                     return visitor.VisitVarDeclaration<T>(this);
+                     return visitor.VisitVarDeclaration(this);
               }
 
        }
@@ -236,9 +244,9 @@ namespace Compiler
                      Condition = condition;
               }
 
-              public override T Accept<T>(IStmtVisitor visitor)
+              public override T Accept<T>(IStmtVisitor<T> visitor)
               {
-                     return visitor.VisitGoToStatement<T>(this);
+                     return visitor.VisitGoToStatement(this);
               }
        }
        public class LabelDeclaration : Statement
@@ -250,9 +258,9 @@ namespace Compiler
                      LabelName = labelName;
               }
 
-              public override T Accept<T>(IStmtVisitor visitor)
+              public override T Accept<T>(IStmtVisitor<T> visitor)
               {
-                     return visitor.VisitLabelDeclaration<T>(this);
+                     return visitor.VisitLabelDeclaration(this);
               }
 
        }

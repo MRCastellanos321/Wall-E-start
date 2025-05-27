@@ -170,14 +170,13 @@ namespace Compiler
         }
         private void CheckAlpha()
         {
-            while (!IsAtEnd() && (IsAlpha(Peek()) || IsDigit(Peek()) || Peek() == '_' || Peek() == '-'))
+            while (!IsAtEnd() && (IsAlpha(Peek()) || IsDigit(Peek()) || Peek() == '_'))
             { Advance(); }
             string textString = sourceCode.Substring(start, position - start);
             TokenType type;
             if (!keyWords.TryGetValue(textString, out type))
             {
                 type = TokenType.IDENTIFIER;
-
             }
             tokens.Add(new Token(type, textString, textString, line));
             ScanIdentifier(tokens[tokens.Count - 1]);
