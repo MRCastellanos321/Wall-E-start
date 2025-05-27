@@ -149,7 +149,6 @@ namespace Compiler
             //if (value is CallFunction || value is BinaryExpr || value is BinaryExpr || value is UnaryExpr || value is GroupingExpr  )
             return new VarDeclaration(ident.lexeme, value);
         }
-
         public Expr ParseExpression()
         {
             return ParseBinaryExpression();
@@ -175,8 +174,6 @@ namespace Compiler
 
             return left;
         }
-
-
         private Expr ParsePrimary()
         {
             if (Peek().type == TokenType.NUMBER || Peek().type == TokenType.STRING)
@@ -263,11 +260,24 @@ namespace Compiler
         }
 
 
-
-
-        public Statement ParseSpawnPoint()
+        private void CheckParameters(int index, int count, List<Expr> parameters, string func)
         {
-            Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
+            for (int i = index; i < parameters.Count; i++)
+            {
+                if (!(parameters[i] is LiteralExpr literal))
+                {
+                    throw new Exception($"Error de tipo en {Peek().line}: el argumento {i + 1} de {func} debe ser un literal.");
+                }
+                object value = literal.Value;
+
+                if (!(value is int))
+                {
+                    throw new Exception($"Error de tipo en {Peek().line}: el argumento {i + 1} de {func} debe ser un entero.");
+                }
+            }
+        }
+        private List<Expr> ParseParameters()
+        {
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             List<Expr> parameters = new List<Expr>();
             do
@@ -276,42 +286,31 @@ namespace Compiler
             } while (Match(TokenType.COMMA));
             //quizás debamos pensar algo aquí si hay un problema con las comas
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            return parameters;
+        }
+        //anadir una que revise el color y modificar esta para que revise la cuenta, ver si hay algo que hacer con respecto a la coma y error
+
+
+        public Statement ParseSpawnPoint()
+        {
+            Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
+            List<Expr> parameters = ParseParameters();
             if (parameters.Count != 2)
             {
                 throw new Exception($"Error de sintaxis en {funcToken.line}: Spawn requiere dos argumentos (int, int). Se recibieron {parameters.Count}.");
             }
-            for (int i = 0; i < parameters.Count; i++)
-            {
-                if (!(parameters[i] is LiteralExpr literal))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un literal.");
-                }
-                object value = literal.Value;
-
-                if (!(value is int))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un entero.");
-                }
-            }
+            CheckParameters(0, 2, parameters, "Spawn");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Expr ParseIsBrushColor()
         {
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-            do
-            {
-                parameters.Add(ParseExpression());
-
-            } while (Match(TokenType.COMMA));
-            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            List<Expr> parameters = ParseParameters();
             if (parameters.Count != 1)
             {
                 throw new Exception($"Error de sintaxis en {funcToken.line}: IsColorBrush requiere 1 argumento (Color). Se recibieron {parameters.Count}.");
             }
-
             if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
             {
                 if (!colors.Contains(colorValue))
@@ -355,20 +354,7 @@ namespace Compiler
         public Expr ParseGetColorCount()
         {
             Token funcToken = Consume(TokenType.GET_COLOR_COUNT, "GetColorCount");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-            do
-            {
-                parameters.Add(ParseExpression());
-            } while (Match(TokenType.COMMA));
-
-            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-            if (parameters.Count != 5)
-            {
-                throw new Exception($"Error en {funcToken.line}: GetColorCount requiere 5 parámetros (color, x1, y1, x2, y2)");
-            }
-
+            List<Expr> parameters = ParseParameters();
             if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
             {
                 if (!colors.Contains(colorValue))
@@ -380,42 +366,19 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: GetColorCount debe recibir un string válido como primer parámetro.");
             }
-            for (int i = 1; i < parameters.Count; i++)
-            {
-                if (!(parameters[i] is LiteralExpr literal2))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de GetColorCount debe ser un literal.");
-                }
-                object value = literal2.Value;
-
-                if (!(value is int))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de  GetColorCount debe ser un entero.");
-                }
-            }
+            CheckParameters(1, 5, parameters, "GetColorCount");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
         }
         //public Expr ParseIsColor() { }
-
-        //las funciones todavía no tienen comprobacion de int
         public Expr ParseIsCanvasColor()
         {
             Token funcToken = Consume(TokenType.IS_CANVAS_COLOR, "IsCanvasColor");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-            do
-            {
-                parameters.Add(ParseExpression());
-            } while (Match(TokenType.COMMA));
-
-            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
+            List<Expr> parameters = ParseParameters();
             if (parameters.Count != 3)
             {
                 throw new Exception($"Error en {funcToken.line}: IsCanvasColor requiere 3 parámetros (color, vertical, horizontal).");
             }
-
             if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
             {
                 if (!colors.Contains(colorValue))
@@ -427,19 +390,7 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: IsCanvasColor debe recibir un string válido como primer parámetro.");
             }
-            for (int i = 1; i < parameters.Count; i++)
-            {
-                if (!(parameters[i] is LiteralExpr literal2))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un literal.");
-                }
-                object value = literal2.Value;
-
-                if (!(value is int))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento {i + 1} de Spawn debe ser un entero.");
-                }
-            }
+            CheckParameters(1, 3, parameters, "IsCanvasColor");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.IS_CANVAS_COLOR, parameters);
         }
@@ -461,55 +412,30 @@ namespace Compiler
             {
                 throw new Exception($"Error en {funcToken.line}: Color debe recibir un string válido.");
             }
-            
+
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.COLOR, new List<Expr> { colorExpr });
         }
         public Statement ParseSize()
         {
             Token funcToken = Consume(TokenType.SIZE, "Size");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            Expr sizeExpr = ParseExpression();
-            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-                if (!(sizeExpr is LiteralExpr literal))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de Size debe ser un literal entero.");
-                }
-                object value = literal.Value;
-
-                if (!(value is int))
-                {
-                    throw new Exception($"Error de tipo en {funcToken.line}: el argumento de Size debe ser un entero.");
-                }
+            List<Expr> parameters = ParseParameters();
+            if (parameters.Count != 1) { throw new Exception($"Error en {funcToken.line}: Size requiere 1 parámetro (int)"); }
+            CheckParameters(0, 1, parameters, "Size");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
-            return new CallComand(TokenType.SIZE, new List<Expr> { sizeExpr });
+            return new CallComand(TokenType.SIZE, new List<Expr> { parameters[0] });
         }
 
         public Statement ParseDrawLine()
         {
 
             Token funcToken = Consume(TokenType.DRAW_LINE, "DrawLine");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-            if (!Match(TokenType.RIGHT_PAREN))
-            {
-                do
-                {
-                    parameters.Add(ParseExpression());
-                } while (Match(TokenType.COMMA));
-
-                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-                if (parameters.Count != 3)
-                {
-                    throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
-                }
-            }
-            else
+            List<Expr> parameters = ParseParameters();
+            if (parameters.Count != 3)
             {
                 throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
             }
+            CheckParameters(0, 3, parameters, "DrawLine");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_LINE, parameters);
         }
@@ -517,54 +443,24 @@ namespace Compiler
         public Statement ParseDrawCircle()
         {
             Token funcToken = Consume(TokenType.DRAW_CIRCLE, "DrawCircle");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-
-            if (!Match(TokenType.RIGHT_PAREN))
+            List<Expr> parameters = ParseParameters();
+            if (parameters.Count != 3)
             {
-                do
-                {
-                    parameters.Add(ParseExpression());
-                } while (Match(TokenType.COMMA));
-
-                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-                if (parameters.Count != 3)
-                {
-                    throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros (dirX, dirY, radius).");
-                }
+                throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros (dirX, dirY, radius).");
             }
-            else
-            {
-                throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros.");
-            }
+            CheckParameters(0, 3, parameters, "DrawCircle");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_CIRCLE, parameters);
         }
         public Statement ParseDrawRectangle()
         {
             Token funcToken = Consume(TokenType.DRAW_RECTANGLE, "DrawRectangle");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            List<Expr> parameters = new List<Expr>();
-
-            if (!Match(TokenType.RIGHT_PAREN))
-            {
-                do
-                {
-                    parameters.Add(ParseExpression());
-                } while (Match(TokenType.COMMA));
-
-                Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-                if (parameters.Count != 5)
-                {
-                    throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
-                }
-            }
-            else
+            List<Expr> parameters = ParseParameters();
+            if (parameters.Count != 5)
             {
                 throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
             }
+            CheckParameters(0, 5, parameters, "DrawRectangle");
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_RECTANGLE, parameters);
         }
