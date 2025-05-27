@@ -104,21 +104,26 @@ namespace Compiler
                 case '-': tokens.Add(new Token(TokenType.MINUS, "-", "-", line)); break;
                 case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); break;
                 case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); break;
-                case '*': tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); break;
                 case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); break;
                 case '"': ReadString(); break;
                 case '\0': return;
+                case '%':
+                    tokens.Add(new Token(TokenType.MODULO, "%", "%", line)); break;
+                case '*':
+                    if (Peek() == '*')
+                    { tokens.Add(new Token(TokenType.POWER, "**", "**", line)); Advance(); break; }
+                    else { tokens.Add(new Token(TokenType.MULTIPLY, "*", "*", line)); break; }
                 case '&':
-                    if (position < sourceCode.Length && sourceCode[position] == '&') { tokens.Add(new Token(TokenType.AND, "&&", "&&", line)); Advance(); break; }
+                    if (Peek() == '&') { tokens.Add(new Token(TokenType.AND, "&&", "&&", line)); Advance(); break; }
                     else { throw new Exception("Caracter & no puede ir solo"); }
 
                 case '|':
-                    if (position < sourceCode.Length && sourceCode[position] == '|') { tokens.Add(new Token(TokenType.OR, "||", "||", line)); Advance(); break; }
+                    if (Peek() == '|') { tokens.Add(new Token(TokenType.OR, "||", "||", line)); Advance(); break; }
                     else { throw new Exception("Caracter | no puede ir solo"); }
 
                 case '<':
-                    if (position < sourceCode.Length && sourceCode[position] == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
-                    else if (position< sourceCode.Length && sourceCode[position] == '-')
+                    if (Peek() == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
+                    else if (Peek() == '-')
                     {
                         Console.Write(sourceCode[position]);
                         Console.Write(sourceCode[position]);

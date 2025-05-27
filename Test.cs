@@ -10,6 +10,16 @@ namespace Compiler
                 Color(""Red"")
                 Size(3)
                 DrawLine(1, 0, 10)
+                DrawRectangle(1, 0, 10, 5, 4)
+                DrawCircle(1, 0, 10)
+                Size(3)
+                IsCanvasColor(""Green"", 4, 2)
+                Color(""Blue"")
+                GetColorCount(""Grey"", 3,2,1,4)
+                GetCanvasSize()
+                GetActualY()
+                GetActualX()
+                IsBrushColor(""White"")
                 counter <- 0
                 loop_start
                 DrawCircle(1, 1, 2)

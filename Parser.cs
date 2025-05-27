@@ -26,8 +26,8 @@ namespace Compiler
             { "IsBrushColor", ParseIsBrushColor},
             { "IsCanvasColor", ParseIsCanvasColor},
             {"IsBrushSize", ParseIsBrushColor},
-            { "ActualX", ParseActualX},
-            { "ActualY", ParseActualY},
+            { "GetActualX", ParseActualX},
+            { "GetActualY", ParseActualY},
             {"GetCanvasSize", ParseGetCanvasSize},
             {"GetColorCount", ParseGetColorCount},
          };
@@ -112,7 +112,7 @@ namespace Compiler
             }
             if (exprFunctionParsers.TryGetValue(lexeme, out Func<Expr> exprParseMethod))
             {
-                Statement exprFunc = parseMethod();
+                Expr exprFunc = exprParseMethod();
                 ConsumeNewLineAfterStatement();
                 return exprFunc;
             }
@@ -229,24 +229,6 @@ namespace Compiler
             Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
             return new GoToStatement(labelToken.lexeme, condition);
         }
-
-        /*       private void ValidateVarIdentifier()
-                {
-                    if (Peek().lexeme.Contains('-'))
-                    {
-                        throw new Exception($"Error en {Peek().line}: el identificador de variable {Peek().lexeme} no puede contener el caracter '-'");
-                    }
-
-                }
-                private void ValidateLabelIdentifier()
-
-                {
-                    if (Peek().lexeme.Contains('_'))
-                    {
-                        throw new Exception($"Error en {Peek().line}: el label {Peek().lexeme} no puede contener el caracter '_'");
-                    }
-
-                }*/
         private Statement ParseLabelDeclaration()
         {
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
@@ -255,7 +237,22 @@ namespace Compiler
         }
 
 
-        private void CheckParameters(int index, int count, List<Expr> parameters, string func)
+
+        private void CheckColor(List<Expr> parameters, string func, int line)
+        {
+            if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
+            {
+                if (!colors.Contains(colorValue))
+                {
+                    throw new Exception($"Error en {line}: {func} debe recibir un color definido válido.");
+                }
+            }
+            else
+            {
+                throw new Exception($"Error en {line}: {func} debe recibir un string válido.");
+            }
+        }
+        private void CheckParameters(int index, List<Expr> parameters, string func, int line)
         {
             for (int i = index; i < parameters.Count; i++)
             {
@@ -271,7 +268,7 @@ namespace Compiler
                 }
             }
         }
-        private List<Expr> ParseParameters()
+        private List<Expr> ParseParameters(int count, int line, string func)
         {
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             List<Expr> parameters = new List<Expr>();
@@ -281,6 +278,10 @@ namespace Compiler
             } while (Match(TokenType.COMMA));
             //quizás debamos pensar algo aquí si hay un problema con las comas
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
+            if (parameters.Count != count)
+            {
+                throw new Exception($"Error de sintaxis en {line}: {func} requiere {count} argumento(s). Se recibieron {parameters.Count}.");
+            }
             return parameters;
         }
         //anadir una que revise el color y modificar esta para que revise la cuenta, ver si hay algo que hacer con respecto a la coma y error
@@ -289,34 +290,16 @@ namespace Compiler
         public Statement ParseSpawnPoint()
         {
             Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 2)
-            {
-                throw new Exception($"Error de sintaxis en {funcToken.line}: Spawn requiere dos argumentos (int, int). Se recibieron {parameters.Count}.");
-            }
-            CheckParameters(0, 2, parameters, "Spawn");
+            List<Expr> parameters = ParseParameters(2, funcToken.line, "Spawn");
+            CheckParameters(0, parameters, "Spawn", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Expr ParseIsBrushColor()
         {
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 1)
-            {
-                throw new Exception($"Error de sintaxis en {funcToken.line}: IsColorBrush requiere 1 argumento (Color). Se recibieron {parameters.Count}.");
-            }
-            if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
-            {
-                if (!colors.Contains(colorValue))
-                {
-                    throw new Exception($"Error en {funcToken.line}: IsBrushColor debe recibir un color definido válido.");
-                }
-            }
-            else
-            {
-                throw new Exception($"Error en {funcToken.line}: IsBrushColor debe recibir un string válido.");
-            }
+            List<Expr> parameters = ParseParameters(1, funcToken.line, "IsBrushColor");
+            CheckColor(parameters, "IsBrushColor", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.IS_BRUSH_COLOR, parameters);
         }
@@ -349,19 +332,9 @@ namespace Compiler
         public Expr ParseGetColorCount()
         {
             Token funcToken = Consume(TokenType.GET_COLOR_COUNT, "GetColorCount");
-            List<Expr> parameters = ParseParameters();
-            if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
-            {
-                if (!colors.Contains(colorValue))
-                {
-                    throw new Exception($"Error en {funcToken.line}: GetColorCount debe recibir un color definido válido como primer parámetro.");
-                }
-            }
-            else
-            {
-                throw new Exception($"Error en {funcToken.line}: GetColorCount debe recibir un string válido como primer parámetro.");
-            }
-            CheckParameters(1, 5, parameters, "GetColorCount");
+            List<Expr> parameters = ParseParameters(5, funcToken.line, "GetColorCount");
+            CheckColor(parameters, "GetColorCount", funcToken.line);
+            CheckParameters(1, parameters, "GetColorCount", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
         }
@@ -369,54 +342,25 @@ namespace Compiler
         public Expr ParseIsCanvasColor()
         {
             Token funcToken = Consume(TokenType.IS_CANVAS_COLOR, "IsCanvasColor");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 3)
-            {
-                throw new Exception($"Error en {funcToken.line}: IsCanvasColor requiere 3 parámetros (color, vertical, horizontal).");
-            }
-            if ((parameters[0] is LiteralExpr literal) && literal.Value is string colorValue)
-            {
-                if (!colors.Contains(colorValue))
-                {
-                    throw new Exception($"Error en {funcToken.line}: IsCanvasColor debe recibir un color definido válido como primer parámetro.");
-                }
-            }
-            else
-            {
-                throw new Exception($"Error en {funcToken.line}: IsCanvasColor debe recibir un string válido como primer parámetro.");
-            }
-            CheckParameters(1, 3, parameters, "IsCanvasColor");
+            List<Expr> parameters = ParseParameters(3, funcToken.line, "IsCanvasColor");
+            CheckColor(parameters, "IsCanvasColor", funcToken.line);
+            CheckParameters(1, parameters, "IsCanvasColor", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallFunction(TokenType.IS_CANVAS_COLOR, parameters);
         }
         public Statement ParseColor()
         {
             Token funcToken = Consume(TokenType.COLOR, "Color");
-            Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
-            Expr colorExpr = ParseExpression();
-            Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-
-            if ((colorExpr is LiteralExpr literal) && literal.Value is string colorValue)
-            {
-                if (!colors.Contains(colorValue))
-                {
-                    throw new Exception($"Error en {funcToken.line}: Color debe recibir un color definido válido.");
-                }
-            }
-            else
-            {
-                throw new Exception($"Error en {funcToken.line}: Color debe recibir un string válido.");
-            }
-
+            List<Expr> parameters = ParseParameters(1, funcToken.line, "Color");
+            CheckColor(parameters, "Color", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
-            return new CallComand(TokenType.COLOR, new List<Expr> { colorExpr });
+            return new CallComand(TokenType.COLOR, parameters);
         }
         public Statement ParseSize()
         {
             Token funcToken = Consume(TokenType.SIZE, "Size");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 1) { throw new Exception($"Error en {funcToken.line}: Size requiere 1 parámetro (int)"); }
-            CheckParameters(0, 1, parameters, "Size");
+            List<Expr> parameters = ParseParameters(1, funcToken.line, "Size");
+            CheckParameters(0, parameters, "Size", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.SIZE, new List<Expr> { parameters[0] });
         }
@@ -425,12 +369,8 @@ namespace Compiler
         {
 
             Token funcToken = Consume(TokenType.DRAW_LINE, "DrawLine");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 3)
-            {
-                throw new Exception($"Error en {funcToken.line}: DrawLine requiere 3 parámetros.");
-            }
-            CheckParameters(0, 3, parameters, "DrawLine");
+            List<Expr> parameters = ParseParameters(3, funcToken.line, "DrawLine");
+            CheckParameters(0, parameters, "DrawLine", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_LINE, parameters);
         }
@@ -438,24 +378,16 @@ namespace Compiler
         public Statement ParseDrawCircle()
         {
             Token funcToken = Consume(TokenType.DRAW_CIRCLE, "DrawCircle");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 3)
-            {
-                throw new Exception($"Error en {funcToken.line}: DrawCircle requiere 3 parámetros (dirX, dirY, radius).");
-            }
-            CheckParameters(0, 3, parameters, "DrawCircle");
+            List<Expr> parameters = ParseParameters(3,  funcToken.line, "DrawCircle");
+            CheckParameters(0, parameters, "DrawCircle", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_CIRCLE, parameters);
         }
         public Statement ParseDrawRectangle()
         {
             Token funcToken = Consume(TokenType.DRAW_RECTANGLE, "DrawRectangle");
-            List<Expr> parameters = ParseParameters();
-            if (parameters.Count != 5)
-            {
-                throw new Exception($"Error en {funcToken.line}: DrawRectangle requiere 5 parámetros (dirX, dirY, distance, width, height).");
-            }
-            CheckParameters(0, 5, parameters, "DrawRectangle");
+            List<Expr> parameters = ParseParameters(5, funcToken.line, "DrawRectangle");
+            CheckParameters(0, parameters, "DrawRectangle", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_RECTANGLE, parameters);
         }
