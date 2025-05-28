@@ -115,6 +115,7 @@ public override T Accept<T>(IStmtVisitor<T> visitor)
               public VariableExpr(string identifier)
               {
                      Identifier = identifier;
+
               }
 
               public override T Accept<T>(IExprVisitor<T> visitor)
@@ -206,11 +207,12 @@ public override T Accept<T>(IStmtVisitor<T> visitor)
        {
               public string Name { get; }
               public Expr Initializer { get; }  // el pdf permit null?
-
-              public VarDeclaration(string name, Expr initializer)
+              public string VarType { get; }
+              public VarDeclaration(string name, Expr initializer, string varType)
               {
                      Name = name;
                      Initializer = initializer;
+                     VarType = varType;
               }
 
               public override T Accept<T>(IStmtVisitor<T> visitor)

@@ -142,16 +142,28 @@ namespace Compiler
 
         public Statement ParseAssignmentStatement()
         {
-            Token ident = Consume(TokenType.IDENTIFIER, "un identificador en la asignación");
-            Consume(TokenType.ARROW, "una flecha '<-' en la asignación");
+            Token ident = Consume(TokenType.IDENTIFIER, "identificador");
+            Consume(TokenType.ARROW, "<-");
             Expr value = ParseExpression();
-            //if (value is CallFunction || value is BinaryExpr || value is BinaryExpr || value is UnaryExpr || value is GroupingExpr  )
-            return new VarDeclaration(ident.lexeme, value);
+            string type = DetermineExpressionType(value);
+            return new VarDeclaration(ident.lexeme, value, type);
         }
+
+        private string DetermineExpressionType(Expr expr)
+        {
+            if (expr is LiteralExpr literal)
+                return (literal.Value is bool) ? "bool" : "number";
+            else if (expr is BinaryExpr binary)
+                return (binary.Operator == "&&" || binary.Operator == "||") ? "bool" : "number";
+            else
+                return "number"; //las funciones a las q puede llamar retornan eso
+        }
+        /*
         public Expr ParseExpression()
         {
             return ParseBinaryExpression();
         }
+*/
         public Expr ParseBinaryExpression()
         {
             Expr left = ParsePrimary();
@@ -175,11 +187,11 @@ namespace Compiler
         }
         private Expr ParsePrimary()
         {
-            if (Peek().type == TokenType.NUMBER || Peek().type == TokenType.STRING)
+            if (Peek().type == TokenType.NUMBER || Peek().type == TokenType.STRING || Peek().type == TokenType.BOOLEAN)
             {
-                Token tokenNumber = Peek();
+                Token token = Peek();
                 Advance();
-                return new LiteralExpr(tokenNumber.literal);
+                return new LiteralExpr(token.literal);
             }
 
             if (exprFunctionParsers.TryGetValue(Peek().lexeme, out Func<Expr> parseMethod))
@@ -197,11 +209,7 @@ namespace Compiler
 
             if (Peek().type == TokenType.IDENTIFIER)
             {
-                if (Peek().lexeme.Contains('-'))
-                {
-                    throw new Exception($"Error en {Peek().line}: Identificador inválido");
-                }
-                //? 
+                //?
                 Token token = Advance();
                 return new VariableExpr(token.lexeme);
             }
@@ -216,6 +224,95 @@ namespace Compiler
         }
 
 
+        public Expr ParseExpression()
+        {
+            return ParseLogicalOr(); // Inicia con la menor precedencia
+        }
+
+        private Expr ParseLogicalOr()
+        {
+            Expr left = ParseLogicalAnd();
+            while (Match(TokenType.OR))
+            {
+                Token op = Previous();
+                Expr right = ParseLogicalAnd();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParseLogicalAnd()
+        {
+            Expr left = ParseEquality();
+            while (Match(TokenType.AND))
+            {
+                Token op = Previous();
+                Expr right = ParseEquality();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParseEquality()
+        {
+            Expr left = ParseComparison();
+            while (Match(TokenType.EQUAL_EQUAL) || Match(TokenType.BANG_EQUAL))
+            {
+                Token op = Previous();
+                Expr right = ParseComparison();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParseComparison()
+        {
+            Expr left = ParseTerm();
+            while (Match(TokenType.GREATER) || Match(TokenType.GREATER_EQUAL) ||
+                   Match(TokenType.LESS) || Match(TokenType.LESS_EQUAL))
+            {
+                Token op = Previous();
+                Expr right = ParseTerm();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParseTerm()
+        {
+            Expr left = ParseFactor();
+            while (Match(TokenType.PLUS) || Match(TokenType.MINUS))
+            {
+                Token op = Previous();
+                Expr right = ParseFactor();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParseFactor()
+        {
+            Expr left = ParsePower();
+            while (Match(TokenType.MULTIPLY) || Match(TokenType.DIVIDE) || Match(TokenType.MODULO))
+            {
+                Token op = Previous();
+                Expr right = ParsePower();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
+
+        private Expr ParsePower()
+        {
+            Expr left = ParsePrimary();
+            if (Match(TokenType.POWER))
+            {
+                Token op = Previous();
+                Expr right = ParsePower();
+                left = new BinaryExpr(left, op.lexeme, right);
+            }
+            return left;
+        }
 
         private Statement ParseLabelStatement()
         {
@@ -226,8 +323,20 @@ namespace Compiler
             Consume(TokenType.LEFT_PAREN, "paréntesis izquierdo '('");
             //aquí seguramente hay que ver algo separado pq la condición tiene que ser bool
             Expr condition = ParseExpression();
+            if (!IsBooleanExpression(condition))
+            {
+                throw new Exception($"La condición en GoTo debe ser booleana (línea {labelToken.line})");
+            }
             Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
             return new GoToStatement(labelToken.lexeme, condition);
+        }
+        private bool IsBooleanExpression(Expr expr)
+        {
+            return expr is BinaryExpr binary &&
+                   (binary.Operator == "&&" || binary.Operator == "||" ||
+                    binary.Operator == "==" || binary.Operator == "!=" ||
+                    binary.Operator == "<" || binary.Operator == ">" ||
+                    binary.Operator == "<=" || binary.Operator == ">=");
         }
         private Statement ParseLabelDeclaration()
         {
@@ -256,16 +365,19 @@ namespace Compiler
         {
             for (int i = index; i < parameters.Count; i++)
             {
-                if (!(parameters[i] is LiteralExpr literal))
+                if (!(parameters[i] is LiteralExpr) && !(parameters[i] is VariableExpr))
                 {
-                    throw new Exception($"Error de tipo en {Peek().line}: el argumento {i + 1} de {func} debe ser un literal.");
+                    throw new Exception($"Error de tipo en {line}: el argumento {i + 1} de {func} debe ser un literal o variable.");
                 }
-                object value = literal.Value;
 
-                if (!(value is int))
+                if (parameters[i] is LiteralExpr literal)
                 {
-                    throw new Exception($"Error de tipo en {Peek().line}: el argumento {i + 1} de {func} debe ser un entero.");
+                    if (!(literal.Value is int))
+                    {
+                        throw new Exception($"Error de tipo en {line}: el argumento {i + 1} de {func} debe ser un entero.");
+                    }
                 }
+               //si es solo variable expr no tengo contexto aquí y no sé si le estoy pasand bool o int pq el parser no lleva cuenta de si ha sido declarada o no
             }
         }
         private List<Expr> ParseParameters(int count, int line, string func)
@@ -274,7 +386,7 @@ namespace Compiler
             List<Expr> parameters = new List<Expr>();
             do
             {
-                parameters.Add(ParseExpression());
+                parameters.Add(ParsePrimary());
             } while (Match(TokenType.COMMA));
             //quizás debamos pensar algo aquí si hay un problema con las comas
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
@@ -378,7 +490,7 @@ namespace Compiler
         public Statement ParseDrawCircle()
         {
             Token funcToken = Consume(TokenType.DRAW_CIRCLE, "DrawCircle");
-            List<Expr> parameters = ParseParameters(3,  funcToken.line, "DrawCircle");
+            List<Expr> parameters = ParseParameters(3, funcToken.line, "DrawCircle");
             CheckParameters(0, parameters, "DrawCircle", funcToken.line);
             Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
             return new CallComand(TokenType.DRAW_CIRCLE, parameters);

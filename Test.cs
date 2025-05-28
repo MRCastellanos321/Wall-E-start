@@ -21,6 +21,7 @@ namespace Compiler
                 GetActualX()
                 IsBrushColor(""White"")
                 counter <- 0
+                var <-  (true || false)
                 loop_start
                 DrawCircle(1, 1, 2)
                 counter <- counter + 1

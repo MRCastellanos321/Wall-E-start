@@ -179,28 +179,15 @@ namespace Compiler
             { Advance(); }
             string textString = sourceCode.Substring(start, position - start);
             TokenType type;
-            if (!keyWords.TryGetValue(textString, out type))
+            if (textString == "true" || textString == "false")
+            {
+                type = TokenType.BOOLEAN;
+            }
+            else if (!keyWords.TryGetValue(textString, out type))
             {
                 type = TokenType.IDENTIFIER;
             }
             tokens.Add(new Token(type, textString, textString, line));
-            ScanIdentifier(tokens[tokens.Count - 1]);
-        }
-        private void ScanIdentifier(Token token)
-        {
-            string text = token.lexeme;
-            bool hasUnderscore = text.Contains('_');
-            bool hasMinus = text.Contains('-');
-
-            if (hasUnderscore && hasMinus)
-            {
-                throw new Exception($"Identificador '{text}' no puede contener _ y - simultáneamente (línea {token.line})");
-            }
-            char firstChar = text[0];
-            if (char.IsDigit(firstChar) || firstChar == '-')
-            {
-                throw new Exception($"Identificador '{text}' no puede comenzar con número o guión (línea {token.line})");
-            }
         }
         private void ReadString()
         {
@@ -215,7 +202,6 @@ namespace Compiler
             Advance();
             string value = sourceCode.Substring(start + 1, position - start - 2);
             tokens.Add(new Token(TokenType.STRING, value, value, line));
-            //aqui tengo que revisar bien los indices para verificar que el identifier se esté pasando sin comillas
         }
     }
 }
