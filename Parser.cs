@@ -144,8 +144,14 @@ namespace Compiler
         {
             Token ident = Consume(TokenType.IDENTIFIER, "identificador");
             Consume(TokenType.ARROW, "<-");
-            Expr value = ParseExpression();
+            Expr value;
+            try
+            {
+                value = ParseExpression();
+            }
+            catch { throw new Exception($"Error en {Peek().line}: Expresión de inicialización de variable no reconocida"); }
             string type = DetermineExpressionType(value);
+            Consume(TokenType.NEW_LINE, "salto de línea luego de asignación de variable");
             return new VarDeclaration(ident.lexeme, value, type);
         }
 
@@ -201,7 +207,6 @@ namespace Compiler
 
             if (Match(TokenType.LEFT_PAREN))
             {
-                Advance();
                 Expr expr = ParseExpression();
                 Consume(TokenType.RIGHT_PAREN, " ')' luego de expresión");
                 return new GroupingExpr(expr);
@@ -315,14 +320,22 @@ namespace Compiler
         }
 
         private Statement ParseLabelStatement()
+
         {
             Consume(TokenType.GO_TO, "GoTo");
             Consume(TokenType.LEFT_BRACKET, "corchete izquierdo '['");
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
             Consume(TokenType.RIGHT_BRACKET, "corchete derecho ']'");
             Consume(TokenType.LEFT_PAREN, "paréntesis izquierdo '('");
-            //aquí seguramente hay que ver algo separado pq la condición tiene que ser bool
-            Expr condition = ParseExpression();
+            Expr condition;
+            try
+            {
+                condition = ParseExpression();
+            }
+            catch
+            {
+                throw new Exception($"Error en {Peek().line}: Condición de GoTo no válida ");
+            }
             if (!IsBooleanExpression(condition))
             {
                 throw new Exception($"La condición en GoTo debe ser booleana (línea {labelToken.line})");
@@ -332,12 +345,35 @@ namespace Compiler
         }
         private bool IsBooleanExpression(Expr expr)
         {
-            return expr is BinaryExpr binary &&
-                   (binary.Operator == "&&" || binary.Operator == "||" ||
-                    binary.Operator == "==" || binary.Operator == "!=" ||
-                    binary.Operator == "<" || binary.Operator == ">" ||
-                    binary.Operator == "<=" || binary.Operator == ">=");
+            if (expr is BinaryExpr binary)
+            {
+                string op = binary.Operator;
+                if (op == "&&" || op == "||" ||
+                    op == "==" || op == "!=" ||
+                    op == "<" || op == ">" ||
+                    op == "<=" || op == ">=")
+                {
+                    return true;
+                }
+            }
+            else if (expr is LiteralExpr literal)
+            {
+                if (literal.Value is string value)
+                {
+                    return value == "true" || value == "false";
+                }
+                else { return false; }
+                ;
+            }
+            else if (expr is VariableExpr)
+            {
+                //variables podrían contener valores booleanos
+                return true;
+            }
+
+            return false;
         }
+
         private Statement ParseLabelDeclaration()
         {
             Token labelToken = Consume(TokenType.IDENTIFIER, "nombre de etiqueta");
@@ -362,6 +398,7 @@ namespace Compiler
             }
         }
         private void CheckParameters(int index, List<Expr> parameters, string func, int line)
+
         {
             for (int i = index; i < parameters.Count; i++)
             {
@@ -377,9 +414,10 @@ namespace Compiler
                         throw new Exception($"Error de tipo en {line}: el argumento {i + 1} de {func} debe ser un entero.");
                     }
                 }
-               //si es solo variable expr no tengo contexto aquí y no sé si le estoy pasand bool o int pq el parser no lleva cuenta de si ha sido declarada o no
+                //si es solo variable expr no tengo contexto aquí y no sé si le estoy pasand bool o int pq el parser no lleva cuenta de si ha sido declarada o no
             }
         }
+        /*
         private List<Expr> ParseParameters(int count, int line, string func)
         {
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
@@ -396,15 +434,70 @@ namespace Compiler
             }
             return parameters;
         }
-        //anadir una que revise el color y modificar esta para que revise la cuenta, ver si hay algo que hacer con respecto a la coma y error
+       */
+        private List<Expr> ParseParameters(int expectedCount, int line, string funcName)
+        {
+            Consume(TokenType.LEFT_PAREN, "paréntesis izquierdo '('");
+            List<Expr> parameters = new List<Expr>();
+            if (Match(TokenType.RIGHT_PAREN))
+            {
+                ValidateParameterCount(expectedCount, 0, line, funcName);
+                return parameters;
+            }
+            do
+            {
+                try
+                {
+                    parameters.Add(ParseExpression());
+                }
+                catch
+                {
+                    if (Peek().type == TokenType.NEW_LINE)
+                    {
+                        throw new Exception($"Error en {line}: no hay parámetros tras la última coma en {funcName}");
+                    }
+                    throw new Exception($"Error en {line}: Expresión no reconocida en {funcName}, parámetro {parameters.Count + 1}");
+                }
+                if (Match(TokenType.COMMA))
+                {
+                    if (Peek().type == TokenType.COMMA)
+                    {
+                        throw new Exception($"Error en línea {line}: Coma adicional después del parámetro.");
+                    }
+                    if (Peek().type == TokenType.RIGHT_PAREN)
+                    {
+                        throw new Exception($"Error en línea {line}:Se espera un parámetro después de la coma.");
+                    }
+                }
+                else if (Peek().type == TokenType.RIGHT_PAREN)
+                {
+                    break;
+                }
+                else
+                {
+                    throw new Exception($"Error en línea {Peek().line}: Se esperaba un paréntesis derecho ')' después de parámetro(s).");
+                }
 
+            } while (true);
 
+            Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
+            ValidateParameterCount(expectedCount, parameters.Count, line, funcName);
+
+            return parameters;
+        }
+        private void ValidateParameterCount(int expected, int actual, int line, string funcName)
+        {
+            if (actual != expected)
+            {
+                throw new Exception($"Error en línea {line}: {funcName} requiere {expected} parámetro(s). Se recibieron {actual}.");
+            }
+        }
         public Statement ParseSpawnPoint()
         {
             Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
             List<Expr> parameters = ParseParameters(2, funcToken.line, "Spawn");
             CheckParameters(0, parameters, "Spawn", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función Spawn");
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Expr ParseIsBrushColor()
@@ -412,7 +505,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
             List<Expr> parameters = ParseParameters(1, funcToken.line, "IsBrushColor");
             CheckColor(parameters, "IsBrushColor", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función IsBrushColor");
             return new CallFunction(TokenType.IS_BRUSH_COLOR, parameters);
         }
         public Expr ParseActualX()
@@ -420,7 +513,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_X, "ActualX");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función ActualX");
             return new CallFunction(TokenType.GET_ACTUAL_X, new List<Expr>());
         }
 
@@ -429,7 +522,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_Y, "ActualY");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función ActualY");
             return new CallFunction(TokenType.GET_ACTUAL_Y, new List<Expr>());
         }
 
@@ -438,7 +531,7 @@ namespace Compiler
             Consume(TokenType.GET_CANVAS_SIZE, "GetCanvasSize");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función GetCanvasSize");
             return new CallFunction(TokenType.GET_CANVAS_SIZE, new List<Expr>());
         }
         public Expr ParseGetColorCount()
@@ -447,7 +540,7 @@ namespace Compiler
             List<Expr> parameters = ParseParameters(5, funcToken.line, "GetColorCount");
             CheckColor(parameters, "GetColorCount", funcToken.line);
             CheckParameters(1, parameters, "GetColorCount", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función GetColorCount");
             return new CallFunction(TokenType.GET_COLOR_COUNT, parameters);
         }
         //public Expr ParseIsColor() { }
@@ -457,7 +550,7 @@ namespace Compiler
             List<Expr> parameters = ParseParameters(3, funcToken.line, "IsCanvasColor");
             CheckColor(parameters, "IsCanvasColor", funcToken.line);
             CheckParameters(1, parameters, "IsCanvasColor", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función IsCanvasColor");
             return new CallFunction(TokenType.IS_CANVAS_COLOR, parameters);
         }
         public Statement ParseColor()
@@ -465,7 +558,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.COLOR, "Color");
             List<Expr> parameters = ParseParameters(1, funcToken.line, "Color");
             CheckColor(parameters, "Color", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función Color");
             return new CallComand(TokenType.COLOR, parameters);
         }
         public Statement ParseSize()
@@ -473,7 +566,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.SIZE, "Size");
             List<Expr> parameters = ParseParameters(1, funcToken.line, "Size");
             CheckParameters(0, parameters, "Size", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función Size");
             return new CallComand(TokenType.SIZE, new List<Expr> { parameters[0] });
         }
 
@@ -483,7 +576,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.DRAW_LINE, "DrawLine");
             List<Expr> parameters = ParseParameters(3, funcToken.line, "DrawLine");
             CheckParameters(0, parameters, "DrawLine", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función DrawLine");
             return new CallComand(TokenType.DRAW_LINE, parameters);
         }
 
@@ -492,7 +585,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.DRAW_CIRCLE, "DrawCircle");
             List<Expr> parameters = ParseParameters(3, funcToken.line, "DrawCircle");
             CheckParameters(0, parameters, "DrawCircle", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función DrawCircle");
             return new CallComand(TokenType.DRAW_CIRCLE, parameters);
         }
         public Statement ParseDrawRectangle()
@@ -500,7 +593,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.DRAW_RECTANGLE, "DrawRectangle");
             List<Expr> parameters = ParseParameters(5, funcToken.line, "DrawRectangle");
             CheckParameters(0, parameters, "DrawRectangle", funcToken.line);
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función DrawRectangle");
             return new CallComand(TokenType.DRAW_RECTANGLE, parameters);
         }
         public Statement ParseFill()
@@ -508,7 +601,7 @@ namespace Compiler
             Consume(TokenType.FILL, "Fill");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-            Consume(TokenType.NEW_LINE, "Se esperaba salto de línea");
+            Consume(TokenType.NEW_LINE, "salto de línea luego de llamado a función Fill");
             return new CallComand(TokenType.FILL, new List<Expr>());
         }
     }

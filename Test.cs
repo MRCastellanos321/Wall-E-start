@@ -4,29 +4,35 @@ namespace Compiler
     {
         static void Main(string[] args)
         {
-            // Ejemplo 1: Código básico con todas las características
             string testCode = @"
-                Spawn(50, 50)
-                Color(""Red"")
-                Size(3)
-                DrawLine(1, 0, 10)
-                DrawRectangle(1, 0, 10, 5, 4)
-                DrawCircle(1, 0, 10)
-                Size(3)
-                IsCanvasColor(""Green"", 4, 2)
-                Color(""Blue"")
-                GetColorCount(""Grey"", 3,2,1,4)
-                GetCanvasSize()
-                GetActualY()
-                GetActualX()
-                IsBrushColor(""White"")
-                counter <- 0
-                var <-  (true || false)
-                loop_start
-                DrawCircle(1, 1, 2)
-                counter <- counter + 1
-                Fill()
+               GoTo [loop_end] (counter >= 5)
+                 DrawCircle(1, 1, 2)
+                 counter <- counter + 1
+                 GoTo [loop_start] ((true || false) && (false && true)
+                 loop_end
             ";
+            /*  string testCode = @"
+                  Spawn(50, 50)
+                  Color(""Red"")
+                  Size(3)
+                  DrawLine(1, 0, 10)
+                  DrawRectangle(1, 0, 10 ,6, 5)
+                  DrawCircle(1, 0, 10)
+                  Size(3)
+                  IsCanvasColor(""Green"", 4, 2)
+                  Color(""Blue"")
+                  GetColorCount(""Grey"", 3,2,1,4)
+                  GetCanvasSize()
+                  GetActualY()
+                  GetActualX()
+                  IsBrushColor(""White"")
+                  counter <- 78 ** 9 * (6 + 3)
+                  var <- (true || false) && (true)
+                  loop_start
+                  DrawCircle(1, 1, 2)
+                  counter <- counter + 1
+                  Fill()
+              ";*/
             /*  string testCode = @"
                  Spawn(50, 50)
                  Color(""Red"")

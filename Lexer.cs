@@ -123,25 +123,15 @@ namespace Compiler
 
                 case '<':
                     if (Peek() == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
-                    else if (Peek() == '-')
-                    {
-                        Console.Write(sourceCode[position]);
-                        Console.Write(sourceCode[position]);
-                        tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break;
-                    }
-                    else
-                    {
-                        Console.Write(sourceCode[position]);
-                        Console.Write(sourceCode[position]);
-                        tokens.Add(new Token(TokenType.LESS, "<", "<", line));
-                    }
+                    else if (Peek() == '-') {  tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
+                    else {  tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
                     break;
                 case '>':
-                    if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }
+                    if (Peek() == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }
                     else { tokens.Add(new Token(TokenType.GREATER, ">", ">", line)); }
                     break;
                 case '=':
-                    if (position + 1 < sourceCode.Length && sourceCode[position + 1] == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); break; }
+                    if (Peek() == '=') { tokens.Add(new Token(TokenType.EQUAL_EQUAL, "==", "==", line)); Advance(); break; }
                     else { tokens.Add(new Token(TokenType.EQUAL, "=", "=", line)); }
                     break;
 
