@@ -214,7 +214,6 @@ namespace Compiler
 
             if (Peek().type == TokenType.IDENTIFIER)
             {
-                //?
                 Token token = Advance();
                 return new VariableExpr(token.lexeme);
             }
@@ -341,6 +340,7 @@ namespace Compiler
                 throw new Exception($"La condición en GoTo debe ser booleana (línea {labelToken.line})");
             }
             Consume(TokenType.RIGHT_PAREN, "paréntesis derecho ')'");
+            Consume(TokenType.NEW_LINE, "salto de línea");
             return new GoToStatement(labelToken.lexeme, condition);
         }
         private bool IsBooleanExpression(Expr expr)

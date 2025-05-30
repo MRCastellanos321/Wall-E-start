@@ -104,7 +104,7 @@ namespace Compiler
                 case '-': tokens.Add(new Token(TokenType.MINUS, "-", "-", line)); break;
                 case '+': tokens.Add(new Token(TokenType.PLUS, "+", "+", line)); break;
                 case ';': tokens.Add(new Token(TokenType.SEMICOLON, ";", ";", line)); break;
-                case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "\n", "\n", line)); break;
+                case '\n': tokens.Add(new Token(TokenType.NEW_LINE, "salto de línea", "salto de línea", line - 1)); break;
                 case '"': ReadString(); break;
                 case '\0': return;
                 case '%':

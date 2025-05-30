@@ -5,10 +5,8 @@ namespace Compiler
         static void Main(string[] args)
         {
             string testCode = @"
-               GoTo [loop_end] (counter >= 5)
-                 DrawCircle(1, 1, 2)
-                 counter <- counter + 1
-                 GoTo [loop_start] ((true || false) && (false && true)
+                 GoTo [loop_start] ((true && false) <= (false || true))
+                 GoTo [loop_start] ((true && false) >= (false || true))
                  loop_end
             ";
             /*  string testCode = @"
