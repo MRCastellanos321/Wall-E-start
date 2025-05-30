@@ -5,7 +5,16 @@ namespace Compiler
         static void Main(string[] args)
         {
             string testCode = @"
-                 GoTo [loop_start] ((true && false) <= (false || true))
+                 
+                  counter <- 78 ** 9 * (6 + 3)
+                  var <- (true || false) && (true) 
+                  DrawCircle(1 > 6, 2, 7)
+                  counter <- (true > false)
+               
+              ";
+            /*@"
+                 GoTo [loop_start] ((true && false || ident))
+                 GoTo [loop_start] ((true && false) == (false || true))
                  GoTo [loop_start] ((true && false) >= (false || true))
                  loop_end
             ";
