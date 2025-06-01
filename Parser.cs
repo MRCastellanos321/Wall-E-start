@@ -1,6 +1,7 @@
 
 namespace Compiler
 {
+    //tengo que ver el reporte de errores pq si el error de un asignacion esta en los parametros de la funcion a la que se le está pasando necesita mas contexto
     public class Parser
     {
         public List<Token> tokens;
@@ -319,44 +320,25 @@ namespace Compiler
             return left;
         }
 
-        private bool IsComparableExpression(Expr expr, bool isAllowedFunction)
-        {
-            if (IsValidNumericExpression(expr, isAllowedFunction)) return true;
-            else if (expr is LiteralExpr literal)
-            {
-                if (literal.Value is string strValue)
-                {
-                    return strValue == "true" || strValue == "false";
-                }
-                return false;
-            }
-            if (expr is VariableExpr) return true;
 
-            return false;
-        }
         private bool IsValidNumericExpression(Expr expr, bool isAllowedFunction)
         {
             if (expr is LiteralExpr literal)
             {
                 return literal.Value is int;
             }
-            else if (isAllowedFunction)
-            {
-                if (expr is VariableExpr || expr is CallFunction)
-                {
-                    return true;
-                }
-            }
             else if (expr is VariableExpr)
+            {
+                return true;
+            }
+            else if (expr is CallFunction && isAllowedFunction)
             {
                 return true;
             }
             else if (expr is BinaryExpr binary)
             {
                 string[] validOps = { "+", "-", "*", "/", "**", "%" };
-
-                if (!validOps.Contains(binary.Operator))
-                    return false;
+                if (!validOps.Contains(binary.Operator)) return false;
 
                 return IsValidNumericExpression(binary.Left, isAllowedFunction) &&
                        IsValidNumericExpression(binary.Right, isAllowedFunction);
@@ -371,56 +353,10 @@ namespace Compiler
             }
             return false;
         }
-        private bool IsValidAssignmentExpression(Expr expr, out string type)
 
+        private bool IsValidBooleanExpression(Expr expr, bool isAllowedFunction)
         {
-            //la asig o es booleana o es numerica, permite funciones
-            type = "Desconocido";
-            if (IsValidNumericExpression(expr, true))
-            {
-                type = "number";
-                return true;
-            }
-            else if (IsValidBooleanExpression(expr, true))
-            {
-                type = "bool";
-                return true;
-            }
-
-            return false;
-        }
-        private bool IsValidBooleanExpression(Expr expr, bool isAllowedFuntion)
-        {
-            if (expr is BinaryExpr binary)
-            {
-                switch (binary.Operator)
-                {
-                    case "&&":
-                    case "||":
-                        return IsValidBooleanExpression(binary.Left, isAllowedFuntion) &&
-                               IsValidBooleanExpression(binary.Right, isAllowedFuntion);
-
-                    case "==":
-                    case "!=":
-                        return IsComparableExpression(binary.Left, isAllowedFuntion) &&
-                               IsComparableExpression(binary.Right, isAllowedFuntion);
-
-                    case "<":
-                    case ">":
-                    case "<=":
-                    case ">=":
-                        return IsValidNumericExpression(binary.Left, isAllowedFuntion) &&
-                               IsValidNumericExpression(binary.Right, isAllowedFuntion);
-
-                    default:
-                        return false;
-                }
-            }
-            else if (expr is GroupingExpr grouping)
-            {
-                return IsValidBooleanExpression(grouping.Expression, isAllowedFuntion);
-            }
-            else if (expr is LiteralExpr literal)
+            if (expr is LiteralExpr literal)
             {
                 if (literal.Value is string strValue)
                 {
@@ -428,19 +364,84 @@ namespace Compiler
                 }
                 return false;
             }
+            else if (expr is VariableExpr)
+            {
+                return true;
+            }
+            else if (expr is CallFunction && isAllowedFunction)
+            {
+                return true;
+            }
+            else if (expr is BinaryExpr binary)
+            {
+                if (binary.Operator == "&&" || binary.Operator == "||")
+                {
+                    return IsValidBooleanExpression(binary.Left, isAllowedFunction) &&
+                           IsValidBooleanExpression(binary.Right, isAllowedFunction);
+                }
+                else if (binary.Operator == "==" || binary.Operator == "!=")
+                {
+                    return IsComparableExpression(binary.Left, isAllowedFunction) &&
+                           IsComparableExpression(binary.Right, isAllowedFunction);
+                }
+                else if (binary.Operator == "<" || binary.Operator == ">" ||
+                         binary.Operator == "<=" || binary.Operator == ">=")
+                {
+                    return IsValidNumericExpression(binary.Left, isAllowedFunction) &&
+                           IsValidNumericExpression(binary.Right, isAllowedFunction);
+                }
+                return false;
+            }
+            else if (expr is GroupingExpr grouping)
+            {
+                return IsValidBooleanExpression(grouping.Expression, isAllowedFunction);
+            }
             else if (expr is UnaryExpr unary && unary.Operator == "!")
             {
-                return IsValidBooleanExpression(unary.Right, isAllowedFuntion);
+                return IsValidBooleanExpression(unary.Right, isAllowedFunction);
+            }
+            return false;
+        }
+
+        private bool IsComparableExpression(Expr expr, bool isAllowedFunction)
+        {
+            if (IsValidNumericExpression(expr, isAllowedFunction)) return true;
+
+            if (expr is LiteralExpr literal)
+            {
+                if (literal.Value is string strValue)
+                {
+                    return strValue == "true" || strValue == "false";
+                }
             }
             else if (expr is VariableExpr)
             {
                 return true;
             }
-            else if (isAllowedFuntion)
+            else if (expr is CallFunction && isAllowedFunction)
             {
-                if (expr is CallFunction)
-                    return true;
+                return true;
             }
+
+            return false;
+        }
+
+        private bool IsValidAssignmentExpression(Expr expr, out string type)
+        {
+            type = "Desconocido";
+
+            if (IsValidNumericExpression(expr, true))
+            {
+                type = "number";
+                return true;
+            }
+
+            if (IsValidBooleanExpression(expr, true))
+            {
+                type = "bool";
+                return true;
+            }
+
             return false;
         }
 
@@ -572,7 +573,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.SPAWN_POINT, "Spawn");
             List<Expr> parameters = ParseParameters(2, funcToken.line, "Spawn");
             CheckParameters(0, parameters, "Spawn", funcToken.line);
-            
+
             return new CallComand(TokenType.SPAWN_POINT, parameters);
         }
         public Expr ParseIsBrushColor()
@@ -580,7 +581,7 @@ namespace Compiler
             Token funcToken = Consume(TokenType.IS_BRUSH_COLOR, "IsBrushColor");
             List<Expr> parameters = ParseParameters(1, funcToken.line, "IsBrushColor");
             CheckColor(parameters, "IsBrushColor", funcToken.line);
-          
+
             return new CallFunction(TokenType.IS_BRUSH_COLOR, parameters);
         }
         public Expr ParseActualX()
@@ -588,7 +589,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_X, "ActualX");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-           
+
             return new CallFunction(TokenType.GET_ACTUAL_X, new List<Expr>());
         }
 
@@ -597,7 +598,7 @@ namespace Compiler
             Consume(TokenType.GET_ACTUAL_Y, "ActualY");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-    
+
             return new CallFunction(TokenType.GET_ACTUAL_Y, new List<Expr>());
         }
 
@@ -606,7 +607,7 @@ namespace Compiler
             Consume(TokenType.GET_CANVAS_SIZE, "GetCanvasSize");
             Consume(TokenType.LEFT_PAREN, "un paréntesis izquierdo");
             Consume(TokenType.RIGHT_PAREN, "un paréntesis derecho");
-         
+
             return new CallFunction(TokenType.GET_CANVAS_SIZE, new List<Expr>());
         }
         public Expr ParseGetColorCount()

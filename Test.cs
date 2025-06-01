@@ -5,8 +5,9 @@ namespace Compiler
         static void Main(string[] args)
         {
             string testCode = @"
+                GetColorCount(""Red"",9,7,7 * 8, 7)
                 var <- 7 * (6 + 3)
-                var <- GetColorCount(""Red"",8,9,7,7) * 6 + GetActualY()
+                var <- GetColorCount(""Red"",8,9,7,4)* GetActualY()
               ";
             /*@"
 
