@@ -2,6 +2,8 @@
 
 namespace Compiler
 {
+    
+    // tengo que ver q pasa con 000
     class Lexer
     {
         private string sourceCode;
@@ -123,8 +125,8 @@ namespace Compiler
 
                 case '<':
                     if (Peek() == '=') { tokens.Add(new Token(TokenType.LESS_EQUAL, "<=", "<=", line)); Advance(); break; }
-                    else if (Peek() == '-') {  tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
-                    else {  tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
+                    else if (Peek() == '-') { tokens.Add(new Token(TokenType.ARROW, "<-", "<-", line)); Advance(); break; }
+                    else { tokens.Add(new Token(TokenType.LESS, "<", "<", line)); }
                     break;
                 case '>':
                     if (Peek() == '=') { tokens.Add(new Token(TokenType.GREATER_EQUAL, ">=", ">=", line)); Advance(); break; }

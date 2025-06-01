@@ -5,13 +5,24 @@ namespace Compiler
         static void Main(string[] args)
         {
             string testCode = @"
-                 
-                  counter <- 78 ** 9 * (6 + 3)
-                  var <- (true || false) && (true) 
-                  DrawCircle(1 > 6, 2, 7)
-                  counter <- (true > false)
-               
+                var <- 7 * (6 + 3)
+                var <- GetColorCount(""Red"",8,9,7,7) * 6 + GetActualY()
               ";
+            /*@"
+
+                counter <- 78 ** 9 * (6 + 3)
+                var <- (true || false) || (true) 
+                var <- vir > li
+                var <- n < p
+                var <- jsj == jsj
+                var<- nss<= js
+                varM<- naajja
+                var<- 54+ 000 * 9
+                 var <- 78 <= 7
+                 var <- 78 == 7
+                 var <- (true && false) 
+                 var <- (true || false) || (true) 
+            ";*/
             /*@"
                  GoTo [loop_start] ((true && false || ident))
                  GoTo [loop_start] ((true && false) == (false || true))
